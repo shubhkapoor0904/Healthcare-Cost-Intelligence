@@ -1,0 +1,980 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PS4B Healthcare Cost Intelligence</title>
+  <link rel="icon" href="data:,">
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #101112;
+      --panel: #181a1b;
+      --panel-2: #202323;
+      --panel-3: #282c2b;
+      --text: #f4f2ec;
+      --muted: #bbb8ad;
+      --faint: #858176;
+      --line: #3d403d;
+      --green: #19c28d;
+      --violet: #8178e6;
+      --amber: #d38a25;
+      --blue: #50a7f3;
+      --red: #e46a64;
+      --radius: 8px;
+      --shadow: 0 18px 50px rgba(0, 0, 0, .28);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background:
+        radial-gradient(circle at 82% 8%, rgba(25, 194, 141, .12), transparent 28%),
+        linear-gradient(180deg, #171819, var(--bg));
+      color: var(--text);
+      font-size: 15px;
+      line-height: 1.45;
+    }
+
+    button, input, select, textarea { font: inherit; }
+    button { color: inherit; }
+
+    .shell {
+      width: min(1320px, calc(100% - 28px));
+      margin: 0 auto;
+      padding: 18px 0 34px;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      min-height: 54px;
+      margin-bottom: 24px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 850;
+      letter-spacing: 0;
+    }
+
+    .brand-mark {
+      width: 34px;
+      height: 34px;
+      display: grid;
+      place-items: center;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      color: var(--green);
+      background: var(--panel);
+      font-size: 13px;
+    }
+
+    .status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 34px;
+      padding: 6px 10px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(24, 26, 27, .8);
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .status-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: var(--amber);
+      box-shadow: 0 0 0 4px rgba(211, 138, 37, .14);
+    }
+
+    .status.ok .status-dot {
+      background: var(--green);
+      box-shadow: 0 0 0 4px rgba(25, 194, 141, .14);
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(0, 1.05fr) minmax(330px, .95fr);
+      gap: 18px;
+      align-items: stretch;
+      margin-bottom: 18px;
+    }
+
+    .intro, .query-card, .panel {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: rgba(24, 26, 27, .86);
+      box-shadow: var(--shadow);
+    }
+
+    .intro {
+      padding: 26px;
+      min-height: 360px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .eyebrow {
+      color: var(--green);
+      font-size: 12px;
+      font-weight: 850;
+      text-transform: uppercase;
+    }
+
+    h1, h2, h3, p { margin: 0; }
+
+    h1 {
+      margin-top: 12px;
+      max-width: 760px;
+      font-size: clamp(36px, 6vw, 76px);
+      line-height: .92;
+      letter-spacing: 0;
+    }
+
+    .intro-copy {
+      max-width: 720px;
+      margin-top: 18px;
+      color: var(--muted);
+      font-size: 17px;
+    }
+
+    .proof-grid {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 26px;
+    }
+
+    .proof {
+      min-height: 82px;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #121414;
+    }
+
+    .proof b {
+      display: block;
+      font-size: 20px;
+      line-height: 1;
+    }
+
+    .proof span {
+      display: block;
+      margin-top: 7px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 650;
+    }
+
+    .query-card {
+      padding: 18px;
+    }
+
+    .query-card h2 {
+      font-size: 20px;
+      margin-bottom: 4px;
+    }
+
+    .query-card > p {
+      color: var(--muted);
+      margin-bottom: 14px;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .field {
+      display: grid;
+      gap: 6px;
+    }
+
+    .field.full { grid-column: 1 / -1; }
+
+    label {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    input, select, textarea {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #111313;
+      color: var(--text);
+      padding: 10px 11px;
+      outline: none;
+    }
+
+    textarea {
+      min-height: 94px;
+      resize: vertical;
+    }
+
+    input:focus, select:focus, textarea:focus {
+      border-color: var(--green);
+      box-shadow: 0 0 0 3px rgba(25, 194, 141, .14);
+    }
+
+    .quick-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin: 12px 0;
+    }
+
+    .chip, .primary, .secondary {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: transform .15s ease, background .15s ease, border-color .15s ease;
+    }
+
+    .chip {
+      min-height: 30px;
+      padding: 5px 9px;
+      background: var(--panel-2);
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 750;
+    }
+
+    .chip:hover, .secondary:hover {
+      border-color: var(--green);
+      color: var(--text);
+    }
+
+    .button-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .primary, .secondary {
+      min-height: 44px;
+      padding: 10px 14px;
+      font-weight: 850;
+    }
+
+    .primary {
+      border-color: var(--green);
+      background: var(--green);
+      color: #06140f;
+    }
+
+    .secondary {
+      background: var(--panel-2);
+    }
+
+    .primary:active, .secondary:active, .chip:active {
+      transform: translateY(1px);
+    }
+
+    .workbench {
+      display: grid;
+      grid-template-columns: minmax(280px, .85fr) minmax(0, 1.15fr);
+      gap: 18px;
+      align-items: start;
+    }
+
+    .panel {
+      overflow: hidden;
+    }
+
+    .panel-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 15px 16px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .panel-head h2 {
+      font-size: 18px;
+    }
+
+    .panel-body {
+      padding: 16px;
+    }
+
+    .empty {
+      min-height: 280px;
+      display: grid;
+      place-items: center;
+      color: var(--muted);
+      text-align: center;
+      padding: 28px;
+    }
+
+    .flow-steps {
+      display: grid;
+      gap: 8px;
+    }
+
+    .step {
+      display: grid;
+      grid-template-columns: 36px 1fr;
+      gap: 10px;
+      align-items: start;
+      padding: 11px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #121414;
+    }
+
+    .step-number {
+      width: 30px;
+      height: 30px;
+      display: grid;
+      place-items: center;
+      border-radius: 8px;
+      background: var(--panel-3);
+      color: var(--muted);
+      font-weight: 900;
+    }
+
+    .step.done .step-number { background: var(--green); color: #06140f; }
+    .step.active .step-number { background: var(--violet); color: white; }
+
+    .step strong {
+      display: block;
+      font-size: 13px;
+      line-height: 1.2;
+    }
+
+    .step span {
+      display: block;
+      margin-top: 3px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .results-grid {
+      display: grid;
+      gap: 14px;
+    }
+
+    .summary-row {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .metric {
+      padding: 13px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #121414;
+    }
+
+    .metric span {
+      color: var(--muted);
+      display: block;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .metric b {
+      display: block;
+      margin-top: 6px;
+      font-size: 20px;
+      line-height: 1.1;
+    }
+
+    .section-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin: 4px 0 8px;
+    }
+
+    .section-title h3 {
+      font-size: 16px;
+    }
+
+    .confidence {
+      min-width: 72px;
+      height: 28px;
+      border-radius: 999px;
+      display: inline-grid;
+      place-items: center;
+      color: #06140f;
+      background: var(--green);
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .cost-list {
+      display: grid;
+      gap: 8px;
+    }
+
+    .cost-item {
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #121414;
+    }
+
+    .cost-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      font-weight: 850;
+    }
+
+    .bar {
+      height: 8px;
+      border-radius: 999px;
+      background: var(--panel-3);
+      margin: 9px 0 7px;
+      overflow: hidden;
+    }
+
+    .bar span {
+      display: block;
+      height: 100%;
+      width: var(--w, 60%);
+      background: linear-gradient(90deg, var(--green), var(--blue));
+    }
+
+    .cost-item p {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .hospital-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .hospital {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #121414;
+      padding: 14px;
+    }
+
+    .hospital-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: start;
+    }
+
+    .hospital h3 {
+      font-size: 17px;
+      margin-bottom: 3px;
+    }
+
+    .hospital-meta {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .score {
+      min-width: 56px;
+      min-height: 42px;
+      border: 1px solid rgba(25, 194, 141, .5);
+      border-radius: 8px;
+      display: grid;
+      place-items: center;
+      color: var(--green);
+      font-weight: 900;
+      background: rgba(25, 194, 141, .08);
+    }
+
+    .tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin: 10px 0;
+    }
+
+    .tag {
+      padding: 3px 7px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 750;
+    }
+
+    .reason {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .subscores {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 6px;
+      margin-top: 11px;
+    }
+
+    .subscore {
+      border-radius: 8px;
+      background: var(--panel-2);
+      padding: 7px;
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .subscore b {
+      color: var(--text);
+    }
+
+    .disclaimer {
+      border: 1px solid rgba(211, 138, 37, .55);
+      border-left: 4px solid var(--amber);
+      border-radius: 8px;
+      padding: 12px;
+      color: var(--muted);
+      background: rgba(211, 138, 37, .08);
+    }
+
+    .error {
+      border: 1px solid rgba(228, 106, 100, .55);
+      border-left: 4px solid var(--red);
+      border-radius: 8px;
+      padding: 12px;
+      color: var(--text);
+      background: rgba(228, 106, 100, .08);
+    }
+
+    .loading {
+      opacity: .7;
+      pointer-events: none;
+    }
+
+    @media (max-width: 980px) {
+      .hero, .workbench {
+        grid-template-columns: 1fr;
+      }
+      .proof-grid, .summary-row, .subscores {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 620px) {
+      .shell {
+        width: min(100% - 16px, 1320px);
+        padding-top: 8px;
+      }
+      .topbar {
+        align-items: start;
+        flex-direction: column;
+      }
+      .intro, .query-card, .panel-body {
+        padding: 14px;
+      }
+      h1 {
+        font-size: 36px;
+      }
+      .form-grid, .proof-grid, .summary-row, .subscores {
+        grid-template-columns: 1fr;
+      }
+      .button-row {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header class="topbar">
+      <div class="brand"><span class="brand-mark">P4</span><span>PS4B Healthcare Cost Intelligence</span></div>
+      <div class="status" id="apiStatus"><span class="status-dot"></span><span>Checking API</span></div>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div class="intro">
+          <div>
+            <div class="eyebrow">Working product MVP</div>
+            <h1>Find care options with explainable treatment cost ranges.</h1>
+            <p class="intro-copy">Enter a symptom or procedure, location, profile, and budget. The product maps the clinical intent, estimates a 5-part cost range, ranks hospitals, and shows confidence with a verification warning.</p>
+          </div>
+          <div class="proof-grid" aria-label="Product capabilities">
+            <div class="proof"><b>50</b><span>seeded procedures</span></div>
+            <div class="proof"><b>5</b><span>cost components</span></div>
+            <div class="proof"><b>0-1</b><span>confidence score</span></div>
+            <div class="proof"><b id="billingMode">Safe</b><span id="billingText">offline, no billing</span></div>
+          </div>
+        </div>
+
+        <section class="query-card" aria-labelledby="query-title">
+          <h2 id="query-title">Patient Query</h2>
+          <p>Try realistic inputs. This MVP is offline-first: static hospital data, synthetic ratings, rule-based mapping, and deterministic local scoring.</p>
+          <form id="queryForm">
+            <div class="field full">
+              <label for="query">Symptom or procedure</label>
+              <textarea id="query" name="query" required>knee pain, Nagpur, 45yo, diabetic</textarea>
+            </div>
+            <div class="quick-row" aria-label="Example queries">
+              <button class="chip" type="button" data-example="chest pain while walking, diabetic, Mumbai">Cardiac</button>
+              <button class="chip" type="button" data-example="pregnancy delivery package, Pune">Maternity</button>
+              <button class="chip" type="button" data-example="cataract surgery for my father age 68, Nagpur">Cataract</button>
+              <button class="chip" type="button" data-example="kidney stone pain, Delhi, private room">Kidney stone</button>
+            </div>
+            <div class="form-grid">
+              <div class="field">
+                <label for="city">City</label>
+                <input id="city" name="city" value="Nagpur" autocomplete="address-level2">
+              </div>
+              <div class="field">
+                <label for="age">Age</label>
+                <input id="age" name="age" type="number" min="0" max="120" value="45">
+              </div>
+              <div class="field">
+                <label for="room_type">Room preference</label>
+                <select id="room_type" name="room_type">
+                  <option value="general">General</option>
+                  <option value="private">Private</option>
+                  <option value="icu">ICU likely</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="budget">Budget INR</label>
+                <input id="budget" name="budget" inputmode="numeric" value="300000">
+              </div>
+              <div class="field full">
+                <label for="comorbidities">Comorbidities</label>
+                <input id="comorbidities" name="comorbidities" value="diabetes" placeholder="diabetes, hypertension">
+              </div>
+            </div>
+            <div class="button-row">
+              <button class="primary" id="runButton" type="submit">Run cost intelligence</button>
+              <button class="secondary" id="resetButton" type="button">Reset</button>
+            </div>
+          </form>
+        </section>
+      </section>
+
+      <section class="workbench">
+        <aside class="panel" aria-labelledby="pipeline-title">
+          <div class="panel-head">
+            <h2 id="pipeline-title">Pipeline</h2>
+            <span class="status ok"><span class="status-dot"></span><span>Offline engines</span></span>
+          </div>
+          <div class="panel-body">
+            <div class="flow-steps" id="flowSteps">
+              <div class="step"><div class="step-number">1</div><div><strong>Clinical mapper</strong><span>Symptom to condition, procedure, ICD-10, severity.</span></div></div>
+              <div class="step"><div class="step-number">2</div><div><strong>Cost lookup</strong><span>Benchmark procedure x city tier base ranges.</span></div></div>
+              <div class="step"><div class="step-number">3</div><div><strong>Cost adjustment</strong><span>Age, diabetes, room type, ICU probability.</span></div></div>
+              <div class="step"><div class="step-number">4</div><div><strong>Provider retrieval</strong><span>Static hospital dataset + local specialization retrieval.</span></div></div>
+              <div class="step"><div class="step-number">5</div><div><strong>Ranking + confidence</strong><span>Weighted score and explainable confidence.</span></div></div>
+              <div class="step"><div class="step-number">6</div><div><strong>Response assembly</strong><span>Hospital cards, cost accordion, disclaimer.</span></div></div>
+            </div>
+          </div>
+        </aside>
+
+        <section class="panel" aria-labelledby="results-title">
+          <div class="panel-head">
+            <h2 id="results-title">Results</h2>
+            <span id="requestId" class="hospital-meta">No query yet</span>
+          </div>
+          <div class="panel-body" id="results">
+            <div class="empty">
+              <div>
+                <h3>Run a query to generate recommendations.</h3>
+                <p>The output will include clinical mapping, 5-component costs, ranked providers, confidence, and a disclaimer.</p>
+              </div>
+            </div>
+          </div>
+        </section>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const form = document.getElementById("queryForm");
+    const results = document.getElementById("results");
+    const requestId = document.getElementById("requestId");
+    const apiStatus = document.getElementById("apiStatus");
+    const runButton = document.getElementById("runButton");
+    const steps = Array.from(document.querySelectorAll(".step"));
+
+    const currency = new Intl.NumberFormat("en-IN", {
+      style: "currency",
+      currency: "INR",
+      maximumFractionDigits: 0
+    });
+
+    function inr(value) {
+      return currency.format(value || 0);
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    async function checkApi() {
+      try {
+        const [healthRes, guardRes] = await Promise.all([
+          fetch("/health"),
+          fetch("/api/billing-guard")
+        ]);
+        if (!healthRes.ok || !guardRes.ok) throw new Error("not ok");
+        const guard = await guardRes.json();
+        apiStatus.classList.add("ok");
+        apiStatus.querySelector("span:last-child").textContent = "Offline engine ready";
+        document.getElementById("billingMode").textContent = "Offline";
+        document.getElementById("billingText").textContent = "deterministic, no billing";
+      } catch {
+        apiStatus.classList.remove("ok");
+        apiStatus.querySelector("span:last-child").textContent = "Open via server";
+      }
+    }
+
+    function payloadFromForm() {
+      const data = new FormData(form);
+      const comorbidities = String(data.get("comorbidities") || "")
+        .split(",")
+        .map((item) => item.trim())
+        .filter(Boolean);
+      return {
+        query: data.get("query"),
+        city: data.get("city"),
+        age: Number(data.get("age") || 40),
+        room_type: data.get("room_type"),
+        budget: data.get("budget"),
+        comorbidities
+      };
+    }
+
+    function setPipeline(state) {
+      steps.forEach((step, index) => {
+        step.classList.remove("done", "active");
+        if (state === "idle") return;
+        if (index < state) step.classList.add("done");
+        if (index === state) step.classList.add("active");
+      });
+    }
+
+    async function animatePipeline() {
+      for (let i = 0; i < steps.length; i += 1) {
+        setPipeline(i);
+        await new Promise((resolve) => setTimeout(resolve, 110));
+      }
+      setPipeline(steps.length);
+    }
+
+    function render(data) {
+      requestId.textContent = data.request_id;
+      const mapping = data.clinical_mapping;
+      const cost = data.cost_estimate;
+      const conf = data.confidence;
+      const maxTotal = Math.max(...cost.components.map((item) => item.max_inr));
+      const isNoMatch = mapping.procedure_key === "__no_match__";
+
+      // Confidence badge colour based on level
+      const confColors = { high: "var(--green)", medium: "var(--amber)", low: "var(--red)" };
+      const confColor = confColors[conf.level] || "var(--amber)";
+      const confBadge = `<span class="confidence" style="background:${confColor}">${conf.level.toUpperCase()} ${Math.round(conf.score * 100)}%</span>`;
+
+      // No-match banner
+      const noMatchBanner = isNoMatch ? `
+        <div class="error" style="margin-bottom:14px">
+          <strong>⚠ We couldn't confidently map your query</strong><br>
+          ${escapeHtml(mapping.clarifying_question)}<br><br>
+          <strong>Try one of these:</strong>
+          <div class="tags" style="margin-top:8px">
+            ${(mapping.example_suggestions || []).map((s) => `<button class="chip suggestion-chip" type="button" data-suggestion="${escapeHtml(s)}">${escapeHtml(s)}</button>`).join("")}
+          </div>
+        </div>
+      ` : "";
+
+      // Low-confidence caution
+      const cautionBanner = conf.caution ? `
+        <div class="error" style="border-color:rgba(211,138,37,.55);border-left-color:var(--amber);background:rgba(211,138,37,.08);margin-bottom:14px">
+          <strong>${escapeHtml(conf.caution)}</strong>
+        </div>
+      ` : "";
+
+      results.innerHTML = `
+        <div class="results-grid">
+          ${noMatchBanner}
+          ${cautionBanner}
+
+          <div class="summary-row">
+            <div class="metric"><span>Mapped procedure</span><b>${escapeHtml(mapping.procedure)}</b></div>
+            <div class="metric"><span>Total estimate</span><b>${inr(cost.total_min_inr)} – ${inr(cost.total_max_inr)}</b></div>
+            <div class="metric"><span>ICD-10 / severity</span><b>${escapeHtml(mapping.icd10_code)} · ${escapeHtml(mapping.severity)}</b></div>
+          </div>
+
+          <div>
+            <div class="section-title">
+              <h3>Clinical mapping</h3>
+              ${confBadge}
+            </div>
+            <div class="hospital">
+              <div class="hospital-meta">Condition: ${escapeHtml(mapping.condition)} · Specialty: ${escapeHtml(mapping.specialty)} · Ambiguity: ${escapeHtml(mapping.ambiguity_score)}</div>
+              <div class="tags">
+                ${(mapping.comorbidity_flags || []).map((flag) => `<span class="tag">${escapeHtml(flag)}</span>`).join("") || `<span class="tag">no comorbidity flags detected</span>`}
+                <span class="tag">city tier: ${escapeHtml(cost.city_tier)}</span>
+                <span class="tag">room: ${escapeHtml(cost.room_type)}</span>
+              </div>
+              ${mapping.clarifying_question && !isNoMatch ? `<p class="reason">💡 ${escapeHtml(mapping.clarifying_question)}</p>` : (!isNoMatch ? `<p class="reason">✓ Mapping is specific enough to continue without a clarification step.</p>` : "")}
+            </div>
+          </div>
+
+          <div>
+            <div class="section-title">
+              <h3>Confidence</h3>
+              ${confBadge}
+            </div>
+            <div class="hospital">
+              <p class="reason" style="margin-bottom:8px"><strong>${escapeHtml(conf.explanation)}</strong></p>
+              <div class="tags">
+                ${conf.reasons.map((r) => `<span class="tag">${escapeHtml(r)}</span>`).join("")}
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <div class="section-title"><h3>5-component cost breakdown</h3><span class="hospital-meta">ranges, not point estimates</span></div>
+            <div class="cost-list">
+              ${cost.components.map((item) => {
+                const width = Math.max(8, Math.round((item.max_inr / maxTotal) * 100));
+                return `
+                  <div class="cost-item">
+                    <div class="cost-top"><span>${escapeHtml(item.label)}</span><span>${inr(item.min_inr)} – ${inr(item.max_inr)}</span></div>
+                    <div class="bar"><span style="--w:${width}%"></span></div>
+                    <p>${escapeHtml(item.why)}</p>
+                  </div>
+                `;
+              }).join("")}
+            </div>
+          </div>
+
+          <div>
+            <div class="section-title"><h3>Ranked hospitals</h3><span class="hospital-meta">${data.hospitals.length} options</span></div>
+            <div class="hospital-list">
+              ${data.hospitals.map((h, index) => `
+                <article class="hospital">
+                  <div class="hospital-top">
+                    <div>
+                      <h3>${index + 1}. ${escapeHtml(h.name)}</h3>
+                      <div class="hospital-meta">${escapeHtml(h.city)} · ${h.distance_km} km · ${h.rating}★ · ${h.review_count || h.reviews} reviews · ${h.nabh_accredited || h.nabh ? "NABH ✓" : "NABH ✗"} · ${escapeHtml(h.cost_category)} cost</div>
+                    </div>
+                    <div class="score">${Math.round(h.score * 100)}</div>
+                  </div>
+                  <div class="tags">
+                    ${h.specialties.map((s) => `<span class="tag">${escapeHtml(s)}</span>`).join("")}
+                    <span class="tag">${inr(h.estimated_min_inr)} – ${inr(h.estimated_max_inr)}</span>
+                  </div>
+                  <div class="tags">
+                    ${(h.key_strengths || []).map((s) => `<span class="tag" style="border-color:rgba(25,194,141,.4);color:var(--green)">✦ ${escapeHtml(s)}</span>`).join("")}
+                    ${h.tradeoff ? `<span class="tag" style="border-color:rgba(211,138,37,.4);color:var(--amber)">⚖ ${escapeHtml(h.tradeoff)}</span>` : ""}
+                  </div>
+                  <p class="reason">${escapeHtml(h.reason)}</p>
+                  <div class="subscores">
+                    <div class="subscore"><b>${h.subscores.clinical}</b><br>clinical</div>
+                    <div class="subscore"><b>${h.subscores.rating}</b><br>rating</div>
+                    <div class="subscore"><b>${h.subscores.accreditation}</b><br>NABH</div>
+                    <div class="subscore"><b>${h.subscores.affordability}</b><br>afford</div>
+                    <div class="subscore"><b>${h.subscores.distance}</b><br>distance</div>
+                  </div>
+                </article>
+              `).join("")}
+            </div>
+          </div>
+
+          <div class="disclaimer">
+            ${escapeHtml(data.disclaimer)}
+          </div>
+        </div>
+      `;
+
+      // Wire up suggestion chips (no-match scenario)
+      document.querySelectorAll(".suggestion-chip").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          document.getElementById("query").value = btn.getAttribute("data-suggestion");
+          runQuery();
+        });
+      });
+    }
+
+    async function runQuery() {
+      runButton.textContent = "Running pipeline...";
+      document.body.classList.add("loading");
+      results.innerHTML = `<div class="empty"><div><h3>Running pipeline...</h3><p>Mapping clinical intent, calculating cost ranges, ranking providers.</p></div></div>`;
+      try {
+        const animation = animatePipeline();
+        const res = await fetch("/api/query", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payloadFromForm())
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || data.error || "Request failed");
+        await animation;
+        render(data);
+      } catch (error) {
+        results.innerHTML = `<div class="error"><strong>Could not run query.</strong><br>${escapeHtml(error.message)}<br><br>Make sure you opened the product through the Python server, not directly as a file.</div>`;
+        setPipeline("idle");
+      } finally {
+        runButton.textContent = "Run cost intelligence";
+        document.body.classList.remove("loading");
+      }
+    }
+
+    form.addEventListener("submit", (event) => {
+      event.preventDefault();
+      runQuery();
+    });
+
+    document.getElementById("resetButton").addEventListener("click", () => {
+      form.reset();
+      document.getElementById("query").value = "knee pain, Nagpur, 45yo, diabetic";
+      document.getElementById("city").value = "Nagpur";
+      document.getElementById("age").value = "45";
+      document.getElementById("budget").value = "300000";
+      document.getElementById("comorbidities").value = "diabetes";
+      setPipeline("idle");
+      requestId.textContent = "No query yet";
+      results.innerHTML = `<div class="empty"><div><h3>Run a query to generate recommendations.</h3><p>The output will include clinical mapping, 5-component costs, ranked providers, confidence, and a disclaimer.</p></div></div>`;
+    });
+
+    document.querySelectorAll("[data-example]").forEach((button) => {
+      button.addEventListener("click", () => {
+        const example = button.getAttribute("data-example");
+        document.getElementById("query").value = example;
+        const cityMatch = example.match(/Mumbai|Pune|Nagpur|Delhi|Bengaluru/i);
+        if (cityMatch) document.getElementById("city").value = cityMatch[0];
+        if (/68|father/i.test(example)) document.getElementById("age").value = "68";
+        if (/private/i.test(example)) document.getElementById("room_type").value = "private";
+        if (/diabetic|diabetes/i.test(example)) document.getElementById("comorbidities").value = "diabetes";
+      });
+    });
+
+    checkApi();
+  </script>
+</body>
+</html>
