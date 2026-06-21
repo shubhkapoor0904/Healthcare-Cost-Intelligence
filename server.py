@@ -762,23 +762,129 @@ def parse_budget(raw: Any) -> int | None:
         return int(digits) if digits else None
 
 
+def extract_city_from_query(query: str) -> str | None:
+    q = query.lower()
+    cursor = _sqlite_conn.cursor()
+    cursor.execute("SELECT DISTINCT city FROM city_tiers")
+    cities = [row["city"] for row in cursor.fetchall()]
+    for city in cities:
+        if re.search(rf"\b{re.escape(city.lower())}\b", q):
+            return city.title()
+    return None
+
+
+def extract_age_from_query(query: str) -> int | None:
+    q = query.lower()
+    patterns = [
+        r"\b(\d+)\s*(?:yo|y/o|years?\s*old|year\s*old|yrs?\s*old)\b",
+        r"\bage\s*(\d+)\b",
+        r"\baged\s*(\d+)\b"
+    ]
+    for pattern in patterns:
+        match = re.search(pattern, q)
+        if match:
+            try:
+                age = int(match.group(1))
+                if 0 <= age <= 120:
+                    return age
+            except ValueError:
+                pass
+    return None
+
+
+def extract_budget_from_query(query: str) -> int | None:
+    q = query.lower()
+    pattern = r"\b(?:budget|inr|rs\.?|rupees?|price|cost)?\s*(?:of\s*)?(\d+(?:\.\d+)?)\s*(k|lakhs?|lacs?|l|cr|crores?|thousand)?\b"
+    matches = re.finditer(pattern, q)
+    for match in matches:
+        val_str = match.group(1)
+        suffix = match.group(2)
+        full_match_text = match.group(0)
+        has_context = any(word in full_match_text for word in ("budget", "inr", "rs", "rupees", "price", "cost"))
+        if not suffix and not has_context:
+            continue
+        try:
+            val = float(val_str)
+            if suffix:
+                if suffix in ("k", "thousand"):
+                    val *= 1_000
+                elif suffix in ("lakhs", "lakh", "l", "lac", "lacs"):
+                    val *= 100_000
+                elif suffix in ("cr", "crore", "crores"):
+                    val *= 10_000_000
+            return int(round(val))
+        except ValueError:
+            pass
+    return None
+
+
+def extract_comorbidities_from_query(query: str) -> list[str]:
+    q = query.lower()
+    found = []
+    mappings = {
+        "diabetes": [r"\bdiabet", r"\bsugar\b"],
+        "hypertension": [r"\bhypertension\b", r"\bbp\b", r"\bblood pressure\b"],
+        "cardiac_history": [r"\bcardiac\b", r"\bheart\b", r"\bstent\b", r"\barter\w*", r"\bbypass\b", r"\bangio"],
+        "kidney_disease": [r"\bkidney\b", r"\brenal\b", r"\bdialysis\b", r"\bcreatinine\b", r"\bnephro"],
+        "pregnancy": [r"\bpregnant\b", r"\bpregnancy\b", r"\bmaternity\b", r"\bdelivery\b", r"\bbaby\b", r"\blabor\b", r"\bc\s*-\s*section\b", r"\bc\s+section\b"],
+        "immunocompromised": [r"\bimmunocompromised\b", r"\bimmuno", r"\bhiv\b", r"\bcancer\b", r"\bchemo\b", r"\bradiation\b", r"\btumor\b"]
+    }
+    for comorb, patterns in mappings.items():
+        for pattern in patterns:
+            if re.search(pattern, q):
+                found.append(comorb)
+                break
+    return found
+
+
 def run_query(payload: dict[str, Any]) -> dict[str, Any]:
     query = str(payload.get("query") or "")
-    city = str(payload.get("city") or "Nagpur")
+    
+    extracted_city = extract_city_from_query(query)
+    extracted_age = extract_age_from_query(query)
+    extracted_budget = extract_budget_from_query(query)
+    extracted_comorbidities = extract_comorbidities_from_query(query)
+    
+    payload_city = payload.get("city")
+    city = str(payload_city if (payload_city and str(payload_city).strip() != "") else (extracted_city if extracted_city else "Nagpur"))
+    
+    payload_age = payload.get("age")
+    if payload_age is not None and str(payload_age).strip() != "" and int(payload_age) > 0:
+        age = int(payload_age)
+    else:
+        age = extracted_age if extracted_age is not None else 40
+        
+    payload_budget = payload.get("budget")
+    if payload_budget is not None and str(payload_budget).strip() != "":
+        budget = parse_budget(payload_budget)
+    else:
+        budget = extracted_budget
+        
+    payload_comorbidities = payload.get("comorbidities") or []
+    if isinstance(payload_comorbidities, str):
+        payload_comorbidities = [c.strip() for c in payload_comorbidities.split(",") if c.strip()]
+    merged_comorbidities = list(set([c.lower() for c in payload_comorbidities]) | set(extracted_comorbidities))
+    
     profile = {
-        "age": payload.get("age") or 40,
+        "age": age,
         "gender": payload.get("gender") or "",
-        "comorbidities": payload.get("comorbidities") or [],
+        "comorbidities": merged_comorbidities,
     }
     room_type = str(payload.get("room_type") or "general")
-    budget = parse_budget(payload.get("budget"))
-
+    
     mapped = map_clinical_query(query)
+    
+    for flag in mapped.get("comorbidity_flags", []):
+        if flag != "urgent_symptoms" and flag not in profile["comorbidities"]:
+            profile["comorbidities"].append(flag)
+            
+    mapped["comorbidity_flags"] = list(set(mapped.get("comorbidity_flags", [])) | set(profile["comorbidities"]))
+    
     cost = estimate_cost(mapped, profile, city, room_type)
     hospitals = discover_hospitals(mapped, city, cost, budget)
     conf = confidence(mapped, cost, hospitals, profile=profile, room_type=room_type)
     disclaimer = "Estimate based on demo benchmark and provider data. Verify live quotes, emergency needs, and doctor advice before deciding."
-
+    
     return {
         "request_id": f"ps4b-{int(time.time() * 1000)}",
         "input": {"query": query, "city": city, "profile": profile, "budget": budget, "room_type": room_type},
@@ -790,6 +896,12 @@ def run_query(payload: dict[str, Any]) -> dict[str, Any]:
         "build_notes": {
             "mvp_status": "offline-first deterministic pipeline; no paid/network API calls are required for core functionality",
             "future_scope": "External APIs can be evaluated later as optional extensions, not MVP dependencies.",
+            "extracted_inputs": {
+                "city": extracted_city,
+                "age": extracted_age,
+                "budget": extracted_budget,
+                "comorbidities": extracted_comorbidities
+            }
         },
     }
 
