@@ -3,3 +3,7 @@ __pycache__/
 *.pyo
 *.pyd
 *.log
+.venv/
+data/healthcare_cost.db
+data/chroma_db/
+

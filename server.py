@@ -5,6 +5,7 @@ import math
 import os
 import re
 import time
+import sqlite3
 from dataclasses import dataclass
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -13,9 +14,74 @@ from urllib.parse import parse_qs, urlparse
 
 
 ROOT = Path(__file__).resolve().parent
-FRONTEND_FILE = ROOT / "index.html"
+FRONTEND_FILE = ROOT / "frontend" / "index.html"
 HOSPITAL_DATA_FILE = ROOT / "data" / "hospitals.json"
 OFFLINE_ONLY = os.environ.get("PS4B_OFFLINE_ONLY", "1").strip() != "0"
+
+DB_FILE = ROOT / "data" / "healthcare_cost.db"
+CHROMA_DIR = ROOT / "data" / "chroma_db"
+
+_sqlite_conn = None
+_chroma_client = None
+_chroma_collection = None
+_embedding_model = None
+_procedure_embeddings_cache = {}
+_procedures_cache = []
+
+def cosine_similarity(v1, v2):
+    dot = sum(a * b for a, b in zip(v1, v2))
+    norm1 = sum(a * a for a in v1) ** 0.5
+    norm2 = sum(b * b for b in v2) ** 0.5
+    return float(dot / max(1e-9, norm1 * norm2))
+
+def init_services():
+    global _sqlite_conn, _chroma_client, _chroma_collection, _embedding_model, _procedure_embeddings_cache, _procedures_cache
+    
+    _sqlite_conn = sqlite3.connect(str(DB_FILE), check_same_thread=False)
+    _sqlite_conn.row_factory = sqlite3.Row
+    
+    cursor = _sqlite_conn.cursor()
+    try:
+        cursor.execute("SELECT COUNT(*) FROM procedures")
+        count = cursor.fetchone()[0]
+        if count == 0:
+            raise Exception("Database empty")
+    except Exception:
+        print("Database not found or empty. Running seeding...")
+        import seed_db
+        seed_db.seed_sqlite()
+        seed_db.seed_chromadb()
+        
+    cursor.execute("SELECT * FROM procedures")
+    for row in cursor.fetchall():
+        proc = dict(row)
+        proc["synonyms"] = json.loads(proc["synonyms_json"])
+        proc["red_flag_terms"] = json.loads(proc["red_flag_terms_json"])
+        _procedures_cache.append(proc)
+        
+    print("Loading sentence-transformers model...")
+    os.environ["HF_HOME"] = "D:\\hf_cache"
+    os.environ["SENTENCE_TRANSFORMERS_HOME"] = "D:\\st_cache"
+    from sentence_transformers import SentenceTransformer
+    _embedding_model = SentenceTransformer("all-MiniLM-L6-v2")
+    
+    import chromadb
+    print("Connecting to ChromaDB...")
+    _chroma_client = chromadb.PersistentClient(path=str(CHROMA_DIR))
+    _chroma_collection = _chroma_client.get_collection("hospital_specializations")
+    
+    print("Precomputing procedure embeddings...")
+    proc_texts = []
+    proc_ids = []
+    for p in _procedures_cache:
+        text = f"{p['display_name']} - {p['condition_label']}. Synonyms: {', '.join(p['synonyms'])}"
+        proc_texts.append(text)
+        proc_ids.append(p["procedure_id"])
+        
+    embeddings = _embedding_model.encode(proc_texts, show_progress_bar=False)
+    for p_id, emb in zip(proc_ids, embeddings):
+        _procedure_embeddings_cache[p_id] = emb
+    print("Initialization completed successfully.")
 
 
 def billing_guard() -> dict[str, Any]:
@@ -166,6 +232,11 @@ def money(value: float) -> int:
 
 def detect_city_tier(city: str) -> str:
     city_norm = city.strip().lower()
+    cursor = _sqlite_conn.cursor()
+    cursor.execute("SELECT tier FROM city_tiers WHERE city = ?", (city_norm,))
+    row = cursor.fetchone()
+    if row:
+        return row["tier"]
     if city_norm in {"mumbai", "delhi", "bengaluru", "bangalore", "chennai", "hyderabad", "kolkata", "pune"}:
         return "metro"
     if city_norm in {"nagpur", "jaipur", "lucknow", "indore", "surat", "bhopal", "kochi"}:
@@ -179,24 +250,57 @@ def tokenize(text: str) -> set[str]:
 
 def map_clinical_query(query: str) -> dict[str, Any]:
     q = query.lower()
-    best: tuple[float, Procedure] | None = None
     q_tokens = tokenize(q)
-    for proc in PROCEDURES:
-        score = 0.0
-        for alias in proc.aliases:
+    
+    query_vector = _embedding_model.encode([q], show_progress_bar=False)[0]
+    
+    candidates = []
+    for proc in _procedures_cache:
+        exact_alias_match = 0.0
+        display_name_l = proc["display_name"].lower()
+        if display_name_l in q:
+            exact_alias_match = 1.0
+        else:
+            for alias in proc["synonyms"]:
+                alias_l = alias.lower()
+                if alias_l in q:
+                    exact_alias_match = 1.0
+                    break
+                    
+        max_overlap = 0.0
+        for alias in proc["synonyms"]:
             alias_l = alias.lower()
             alias_tokens = tokenize(alias_l)
-            if alias_l in q:
-                score += 4.0 + len(alias_tokens) * 0.2
-            score += len(q_tokens & alias_tokens) * 0.7
-        if proc.specialty.lower() in q:
-            score += 1.0
-        if best is None or score > best[0]:
-            best = (score, proc)
-
-    # FIX-1: Do NOT silently default to a procedure when nothing matches.
-    #        Return a structured "no match" response with a clarification prompt.
-    if best is None or best[0] <= 0:
+            overlap = len(q_tokens & alias_tokens) / max(1, len(alias_tokens))
+            if overlap > max_overlap:
+                max_overlap = overlap
+                
+        specialty_match = 0.0
+        if proc["specialty"].lower() in q:
+            specialty_match = 0.2
+            
+        token_overlap_score = min(1.0, max_overlap + specialty_match)
+        
+        red_flag_match = 0.0
+        for term in proc["red_flag_terms"]:
+            if term.lower() in q:
+                red_flag_match = 1.0
+                break
+                
+        normalized_rule_score = exact_alias_match * 0.5 + token_overlap_score * 0.4 + red_flag_match * 0.1
+        
+        cached_emb = _procedure_embeddings_cache[proc["procedure_id"]]
+        embedding_score = cosine_similarity(query_vector, cached_emb)
+        
+        clinical_match_score = 0.55 * embedding_score + 0.45 * normalized_rule_score
+        candidates.append((clinical_match_score, proc))
+        
+    candidates.sort(key=lambda x: x[0], reverse=True)
+    
+    best_score, best_proc = candidates[0]
+    second_score = candidates[1][0] if len(candidates) > 1 else 0.0
+    
+    if best_score < 0.55:
         return {
             "condition": "Unknown",
             "procedure_key": "__no_match__",
@@ -217,10 +321,16 @@ def map_clinical_query(query: str) -> dict[str, Any]:
                 "cataract surgery for age 68, Pune",
             ],
         }
-
-    proc = best[1]
-    ambiguity = max(0.08, min(0.72, 0.72 - best[0] * 0.08))
-
+        
+    ambiguity_score = round(1.0 - best_score, 2)
+    clarifying_question = None
+    
+    if (best_score - second_score) < 0.08:
+        second_proc = candidates[1][1]
+        clarifying_question = f"Did you mean {best_proc['display_name']} or {second_proc['display_name']}?"
+    elif best_score < 0.72:
+        clarifying_question = "Can you add duration, severity, and any known diagnosis?"
+        
     red_flags = []
     if any(term in q for term in ("chest pain", "stroke", "paralysis", "breathless", "severe bleeding", "unconscious")):
         red_flags.append("urgent_symptoms")
@@ -228,66 +338,33 @@ def map_clinical_query(query: str) -> dict[str, Any]:
         red_flags.append("diabetes")
     if any(term in q for term in ("bp", "hypertension", "pressure")):
         red_flags.append("hypertension")
-
+    if "kidney" in q or "creatinine" in q or "renal" in q:
+        red_flags.append("kidney_disease")
+        
     severity = "moderate"
-    if proc.complexity == "major" or red_flags:
+    if best_proc["complexity"] == "major" or "urgent_symptoms" in red_flags:
         severity = "high"
-    elif proc.complexity == "low":
+    elif best_proc["complexity"] == "low":
         severity = "low"
-
+        
     return {
-        "condition": proc.condition,
-        "procedure_key": proc.key,
-        "procedure": proc.name,
-        "icd10_code": proc.icd10,
-        "specialty": proc.specialty,
-        "complexity": proc.complexity,
+        "condition": best_proc["condition_label"],
+        "procedure_key": best_proc["procedure_id"],
+        "procedure": best_proc["display_name"],
+        "icd10_code": best_proc["icd10_code"],
+        "specialty": best_proc["specialty"],
+        "complexity": best_proc["complexity"],
         "severity": severity,
         "comorbidity_flags": red_flags,
-        "ambiguity_score": round(ambiguity, 2),
-        "clarifying_question": "Can you add duration, severity, and any known diagnosis?" if ambiguity > 0.6 else None,
+        "ambiguity_score": ambiguity_score,
+        "clarifying_question": clarifying_question,
     }
 
 
 def estimate_cost(mapped: dict[str, Any], profile: dict[str, Any], city: str, room_type: str) -> dict[str, Any]:
     city_tier = detect_city_tier(city)
-
-    # FIX-3: Use procedure-specific base costs when available,
-    #        instead of lumping everything into the shared complexity bucket.
     proc_key = mapped["procedure_key"]
-    if proc_key in PROCEDURE_BASE_OVERRIDES:
-        low, high = PROCEDURE_BASE_OVERRIDES[proc_key]
-    else:
-        low, high = BASE_COSTS[mapped["complexity"]]
-
-    multiplier = CITY_MULTIPLIERS.get(city_tier, 0.9)
-
-    age = int(profile.get("age") or 40)
-    comorbidities = " ".join(profile.get("comorbidities") or []).lower()
-    query_flags = " ".join(mapped.get("comorbidity_flags") or []).lower()
-
-    adjustments = [{"label": f"{city_tier} city tier", "multiplier": multiplier}]
-    if age >= 65:
-      multiplier *= 1.15
-      adjustments.append({"label": "Age over 65", "multiplier": 1.15})
-    if "diabetes" in comorbidities or "diabetes" in query_flags:
-      multiplier *= 1.08
-      adjustments.append({"label": "Diabetes care buffer", "multiplier": 1.08})
-    if "hypertension" in comorbidities or "hypertension" in query_flags:
-      multiplier *= 1.04
-      adjustments.append({"label": "Hypertension monitoring", "multiplier": 1.04})
-    if room_type == "private":
-      multiplier *= 1.18
-      adjustments.append({"label": "Private room", "multiplier": 1.18})
-    elif room_type == "icu":
-      multiplier *= 1.55
-      adjustments.append({"label": "ICU probability", "multiplier": 1.55})
-
-    total_min = money(low * multiplier)
-    total_max = money(high * multiplier)
-
-    # FIX-4: Build components from weights, then adjust the largest
-    #        component so the sum exactly equals the total (no drift).
+    
     labels = {
         "procedure": "Procedure / surgery",
         "doctor_fees": "Doctor fees",
@@ -302,22 +379,125 @@ def estimate_cost(mapped: dict[str, Any], profile: dict[str, Any], city: str, ro
         "diagnostics": "Pre-op tests, imaging, monitoring, repeat checks.",
         "medicines_contingency": "Medicines, consumables, risk buffer for complications.",
     }
-    components = []
-    for key, weight in COMPONENT_WEIGHTS.items():
-        components.append({
+    
+    if proc_key == "__no_match__":
+        components = [{
             "key": key,
             "label": labels[key],
-            "min_inr": money(total_min * weight),
-            "max_inr": money(total_max * weight),
-            "why": whys[key],
-        })
+            "min_inr": 0,
+            "max_inr": 0,
+            "why": whys[key]
+        } for key in COMPONENT_WEIGHTS.keys()]
+        return {
+            "city_tier": city_tier,
+            "room_type": room_type,
+            "total_min_inr": 0,
+            "total_max_inr": 0,
+            "components": components,
+            "adjustments": [],
+            "coverage": 0.0,
+        }
+        
+    cursor = _sqlite_conn.cursor()
+    cursor.execute("""
+        SELECT component, min_inr, max_inr 
+        FROM procedure_benchmarks 
+        WHERE procedure_id = ? AND city_tier = ?
+    """, (proc_key, city_tier))
+    rows = cursor.fetchall()
+    
+    # If benchmarks are empty (unseeded), fallback
+    if not rows:
+        low, high = PROCEDURE_BASE_OVERRIDES.get(proc_key, BASE_COSTS[mapped["complexity"]])
+        tier_multiplier = CITY_MULTIPLIERS.get(city_tier, 0.9)
+        total_min_raw = money(low * tier_multiplier)
+        total_max_raw = money(high * tier_multiplier)
+        db_rows = []
+        for key, weight in COMPONENT_WEIGHTS.items():
+            db_rows.append({
+                "component": key,
+                "min_inr": money(total_min_raw * weight),
+                "max_inr": money(total_max_raw * weight)
+            })
+        rows = db_rows
 
-    # Reconcile rounding drift: adjust the largest component
-    sum_min = sum(c["min_inr"] for c in components)
-    sum_max = sum(c["max_inr"] for c in components)
-    biggest = max(components, key=lambda c: c["max_inr"])
-    biggest["min_inr"] += total_min - sum_min
-    biggest["max_inr"] += total_max - sum_max
+    age = int(profile.get("age") or 40)
+    comorbidities = [c.lower() for c in (profile.get("comorbidities") or [])]
+    query_flags = [f.lower() for f in (mapped.get("comorbidity_flags") or [])]
+    
+    comp_multipliers = {key: 1.0 for key in COMPONENT_WEIGHTS.keys()}
+    adjustments_added = set()
+    adjustments = []
+    
+    city_mult = CITY_MULTIPLIERS.get(city_tier, 0.9)
+    adjustments.append({"label": f"{city_tier} city tier", "multiplier": city_mult})
+    
+    cursor.execute("SELECT factor, component, condition, multiplier FROM multipliers")
+    for m in cursor.fetchall():
+        factor = m["factor"]
+        comp = m["component"]
+        condition = m["condition"]
+        val = m["multiplier"]
+        
+        applies = False
+        if factor == "age_65_plus" and age >= 65:
+            applies = True
+            label = "Age over 65"
+        elif factor == "diabetes" and ("diabetes" in comorbidities or "diabetes" in query_flags):
+            applies = True
+            label = "Diabetes care buffer"
+        elif factor == "hypertension" and ("hypertension" in comorbidities or "hypertension" in query_flags):
+            applies = True
+            label = "Hypertension monitoring"
+        elif factor == "kidney_disease" and ("kidney_disease" in comorbidities or "kidney_disease" in query_flags or "kidney" in comorbidities or "kidney" in query_flags):
+            applies = True
+            label = "Kidney monitoring"
+        elif factor == "private_room" and room_type == "private":
+            applies = True
+            label = "Private room"
+        elif factor == "icu_likely" and room_type == "icu":
+            applies = True
+            label = "ICU stay probability"
+            
+        if applies:
+            if comp in comp_multipliers:
+                comp_multipliers[comp] *= val
+            adj_key = (factor, val)
+            if adj_key not in adjustments_added:
+                adjustments_added.add(adj_key)
+                adjustments.append({"label": label, "multiplier": val})
+                
+    complexity_map = {"low": 1, "moderate": 2, "major": 3}
+    complexity_level = complexity_map.get(mapped["complexity"], 1)
+    
+    unique_comorbidities = set(comorbidities) | set(query_flags)
+    unique_comorbidities.discard("urgent_symptoms")
+    comorbidity_count = len(unique_comorbidities)
+    
+    variability_multiplier = 1.0 + (0.05 * complexity_level) + (0.04 * comorbidity_count)
+    
+    components = []
+    total_min = 0
+    total_max = 0
+    
+    for row in rows:
+        comp_key = row["component"]
+        c_min = row["min_inr"]
+        c_max = row["max_inr"]
+        
+        mult = comp_multipliers.get(comp_key, 1.0)
+        adj_min = money(c_min * mult)
+        adj_max = money(c_max * mult * variability_multiplier)
+        
+        components.append({
+            "key": comp_key,
+            "label": labels[comp_key],
+            "min_inr": adj_min,
+            "max_inr": adj_max,
+            "why": whys[comp_key],
+        })
+        total_min += adj_min
+        total_max += adj_max
 
     return {
         "city_tier": city_tier,
@@ -326,52 +506,101 @@ def estimate_cost(mapped: dict[str, Any], profile: dict[str, Any], city: str, ro
         "total_max_inr": total_max,
         "components": components,
         "adjustments": adjustments,
-        "coverage": 0.92 if proc_key in {p.key for p in PROCEDURES} else 0.55,
+        "coverage": 0.95 if proc_key in {p.key for p in PROCEDURES} else 0.40,
     }
 
 
 def discover_hospitals(mapped: dict[str, Any], city: str, cost: dict[str, Any], budget: int | None) -> list[dict[str, Any]]:
-    city_l = city.strip().lower()
-    candidates = [h for h in HOSPITALS if h["city"].lower() == city_l]
-    if len(candidates) < 3:
-        requested_tier = detect_city_tier(city)
-        candidates = sorted(
-            HOSPITALS,
-            key=lambda h: (
-                0 if h["city"].lower() == city_l else 1,
-                0 if h["city_tier"] == requested_tier else 1,
-                h["distance_km"],
-            ),
-        )[:10]
-
-    max_distance = max(h["distance_km"] for h in candidates) or 15
+    city_norm = city.strip().title()
+    
+    query_text = f"{mapped['procedure']} {mapped['specialty']} {mapped['condition']}"
+    query_vector = _embedding_model.encode([query_text], show_progress_bar=False)[0].tolist()
+    
+    results = _chroma_collection.query(
+        query_embeddings=[query_vector],
+        where={"city": city_norm},
+        n_results=8,
+        include=["metadatas", "embeddings", "documents"]
+    )
+    
+    if not results["ids"] or len(results["ids"][0]) < 3:
+        results = _chroma_collection.query(
+            query_embeddings=[query_vector],
+            n_results=12,
+            include=["metadatas", "embeddings", "documents"]
+        )
+        
+    hospitals_list = []
+    if results["ids"] and len(results["ids"][0]) > 0:
+        for idx in range(len(results["ids"][0])):
+            h_id = results["ids"][0][idx]
+            meta = results["metadatas"][0][idx]
+            emb = results["embeddings"][0][idx]
+            
+            clinical = cosine_similarity(query_vector, emb)
+            rating_score = max(0.0, min(1.0, (meta["rating"] - 3.5) / 1.3))
+            accreditation = 1.0 if meta["nabh"] else 0.45
+            
+            distance_km = meta["distance_km"]
+            price_index = meta["price_index"]
+            hospital_mid = ((cost["total_min_inr"] + cost["total_max_inr"]) / 2) * price_index
+            
+            if budget:
+                affordability = max(0.05, min(1.0, budget / hospital_mid))
+            else:
+                affordability = {"budget": 0.95, "mid": 0.78, "premium": 0.55}.get(meta["cost_category"], 0.75)
+                
+            h_specialties = json.loads(meta["specialties"])
+            
+            hospitals_list.append({
+                "name": meta["name"],
+                "city": meta["city"],
+                "distance_km": distance_km,
+                "rating": meta["rating"],
+                "review_count": meta["review_count"],
+                "nabh_accredited": meta["nabh"],
+                "cost_category": meta["cost_category"],
+                "price_index": price_index,
+                "specialties": h_specialties,
+                "clinical_fit": clinical,
+                "rating_score": rating_score,
+                "accreditation": accreditation,
+                "affordability": affordability
+            })
+            
+    if not hospitals_list:
+        return []
+        
+    max_distance = max(h["distance_km"] for h in hospitals_list) or 15.0
+    
     ranked = []
-    for h in candidates:
-        clinical = clinical_match(mapped, h)
-        rating_score = max(0.0, min(1.0, (h["rating"] - 3.5) / 1.3))
-        accreditation = 1.0 if h["nabh_accredited"] else 0.45
+    for h in hospitals_list:
         accessibility = max(0.05, min(1.0, 1 - (h["distance_km"] / (max_distance + 4))))
-        hospital_mid = ((cost["total_min_inr"] + cost["total_max_inr"]) / 2) * h["price_index"]
-        if budget:
-            affordability = max(0.05, min(1.0, budget / hospital_mid))
+        
+        req_spec = mapped["specialty"].lower()
+        h_specs_lower = [s.lower() for s in h["specialties"]]
+        if req_spec in h_specs_lower:
+            clinical_fit_score = 1.0
         else:
-            affordability = {"budget": 0.95, "mid": 0.78, "premium": 0.55}.get(h["cost_category"], 0.75)
-
+            clinical_fit_score = h["clinical_fit"]
+            
         score = (
-            0.35 * clinical
-            + 0.20 * rating_score
-            + 0.15 * accreditation
-            + 0.20 * affordability
+            0.35 * clinical_fit_score
+            + 0.20 * h["rating_score"]
+            + 0.15 * h["accreditation"]
+            + 0.20 * h["affordability"]
             + 0.10 * accessibility
         )
+        
         strengths, tradeoff = ranking_explanation_factors(
             h,
-            clinical=clinical,
-            rating_score=rating_score,
-            accreditation=accreditation,
-            affordability=affordability,
-            accessibility=accessibility,
+            clinical=clinical_fit_score,
+            rating_score=h["rating_score"],
+            accreditation=h["accreditation"],
+            affordability=h["affordability"],
+            accessibility=accessibility
         )
+        
         ranked.append({
             "name": h["name"],
             "city": h["city"],
@@ -382,22 +611,23 @@ def discover_hospitals(mapped: dict[str, Any], city: str, cost: dict[str, Any], 
             "nabh": h["nabh_accredited"],
             "nabh_accredited": h["nabh_accredited"],
             "cost_category": h["cost_category"],
-            "approximate_location": h["approximate_location"],
+            "approximate_location": None,
             "specialties": h["specialties"],
             "estimated_min_inr": money(cost["total_min_inr"] * h["price_index"]),
             "estimated_max_inr": money(cost["total_max_inr"] * h["price_index"]),
             "key_strengths": strengths,
             "tradeoff": tradeoff,
             "subscores": {
-                "clinical": round(clinical, 2),
-                "rating": round(rating_score, 2),
-                "accreditation": round(accreditation, 2),
-                "affordability": round(affordability, 2),
+                "clinical": round(clinical_fit_score, 2),
+                "rating": round(h["rating_score"], 2),
+                "accreditation": round(h["accreditation"], 2),
+                "affordability": round(h["affordability"], 2),
                 "distance": round(accessibility, 2),
             },
             "score": round(score, 3),
             "reason": make_reason(h, mapped, strengths, tradeoff),
         })
+        
     return sorted(ranked, key=lambda item: item["score"], reverse=True)[:8]
 
 
@@ -406,21 +636,10 @@ def clinical_match(mapped: dict[str, Any], hospital: dict[str, Any]) -> float:
     specialties = [s.lower() for s in hospital["specialties"]]
     if requested in specialties:
         return 1.0
-
     requested_tokens = tokenize(requested)
     specialty_tokens = tokenize(" ".join(specialties))
     token_score = len(requested_tokens & specialty_tokens) / max(1, len(requested_tokens))
-    related_groups = [
-        {"orthopedics", "sports medicine", "rehabilitation", "trauma care"},
-        {"cardiology", "cardiac surgery", "critical care"},
-        {"oncology", "surgical oncology", "radiation oncology", "palliative care"},
-        {"obstetrics", "gynecology", "neonatology", "pediatrics", "fertility"},
-        {"general surgery", "gastroenterology", "urology"},
-        {"internal medicine", "pulmonology", "endocrinology", "nephrology"},
-        {"ophthalmology", "ent", "day care surgery"},
-    ]
-    related = any(requested in group and bool(group & set(specialties)) for group in related_groups)
-    return max(0.35, min(0.82, token_score * 0.65 + (0.45 if related else 0.0)))
+    return max(0.35, min(0.82, token_score))
 
 
 def ranking_explanation_factors(
@@ -665,6 +884,7 @@ class Handler(BaseHTTPRequestHandler):
 
 def main() -> None:
     port = int(os.environ.get("PORT", "8765"))
+    init_services()
     server = ThreadingHTTPServer(("127.0.0.1", port), Handler)
     print(f"PS4B Healthcare Cost Intelligence running at http://127.0.0.1:{port}")
     server.serve_forever()
