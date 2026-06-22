@@ -474,11 +474,12 @@ def estimate_cost(mapped: dict[str, Any], profile: dict[str, Any], city: str, ro
     unique_comorbidities.discard("urgent_symptoms")
     comorbidity_count = len(unique_comorbidities)
     
-    variability_multiplier = 1.0 + (0.05 * complexity_level) + (0.04 * comorbidity_count)
-    
     components = []
     total_min = 0
     total_max = 0
+    
+    # Calculate a narrow uncertainty band (7.5% to 12.5%) based on complexity & comorbidities
+    uncertainty_fraction = 0.06 + (0.015 * complexity_level) + (0.01 * comorbidity_count)
     
     for row in rows:
         comp_key = row["component"]
@@ -486,8 +487,11 @@ def estimate_cost(mapped: dict[str, Any], profile: dict[str, Any], city: str, ro
         c_max = row["max_inr"]
         
         mult = comp_multipliers.get(comp_key, 1.0)
-        adj_min = money(c_min * mult)
-        adj_max = money(c_max * mult * variability_multiplier)
+        c_mid = (c_min + c_max) / 2.0
+        expected_cost = c_mid * mult
+        
+        adj_min = money(expected_cost * (1.0 - uncertainty_fraction))
+        adj_max = money(expected_cost * (1.0 + uncertainty_fraction))
         
         components.append({
             "key": comp_key,
