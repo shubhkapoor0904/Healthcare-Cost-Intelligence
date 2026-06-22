@@ -563,7 +563,11 @@ def discover_hospitals(mapped: dict[str, Any], city: str, cost: dict[str, Any], 
 
         rating_score = max(0.0, min(1.0, (h["rating"] - 3.5) / 1.3))
         accreditation = 1.0 if h["nabh_accredited"] else 0.45
-        price_index = h["price_index"]
+        _cat   = str(h.get("cost_category") or "mid").lower()
+        _base  = {"budget": 0.78, "mid": 1.0, "premium": 1.24}.get(_cat, 1.0)
+        _radj  = (h["rating"] - 4.0) / 25.0          # –0.04 … +0.04
+        _nadj  = 0.04 if h["nabh_accredited"] else 0.0
+        price_index = round(_base + _radj + _nadj, 4)
         hospital_mid = ((cost["total_min_inr"] + cost["total_max_inr"]) / 2) * price_index
 
         if budget:
@@ -622,8 +626,13 @@ def discover_hospitals(mapped: dict[str, Any], city: str, cost: dict[str, Any], 
             affordability=h["affordability"]
         )
         
-        min_cost = cost["total_min_inr"] * h["price_index"]
-        max_cost = cost["total_max_inr"] * h["price_index"]
+        _cat2  = str(h.get("cost_category") or "mid").lower()
+        _base2 = {"budget": 0.78, "mid": 1.0, "premium": 1.24}.get(_cat2, 1.0)
+        _radj2 = (h["rating"] - 4.0) / 25.0
+        _nadj2 = 0.04 if h.get("nabh_accredited") else 0.0
+        h_price_index = round(_base2 + _radj2 + _nadj2, 4)
+        min_cost = cost["total_min_inr"] * h_price_index
+        max_cost = cost["total_max_inr"] * h_price_index
         estimated_cost_inr = money((min_cost + max_cost) / 2)
         uncertainty_inr = money((max_cost - min_cost) / 2)
 
