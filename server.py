@@ -36,6 +36,8 @@ def cosine_similarity(v1, v2):
 
 def init_services():
     global _sqlite_conn, _chroma_client, _chroma_collection, _embedding_model, _procedure_embeddings_cache, _procedures_cache
+    if _sqlite_conn is not None:
+        return
     
     _sqlite_conn = sqlite3.connect(str(DB_FILE), check_same_thread=False)
     _sqlite_conn.row_factory = sqlite3.Row
@@ -60,10 +62,21 @@ def init_services():
         _procedures_cache.append(proc)
         
     print("Loading sentence-transformers model...")
-    os.environ["HF_HOME"] = "D:\\hf_cache"
-    os.environ["SENTENCE_TRANSFORMERS_HOME"] = "D:\\st_cache"
+    if os.environ.get("VERCEL") or not os.path.exists("D:\\"):
+        os.environ["HF_HOME"] = "/tmp/hf_cache"
+        os.environ["SENTENCE_TRANSFORMERS_HOME"] = "/tmp/st_cache"
+    else:
+        os.environ["HF_HOME"] = "D:\\hf_cache"
+        os.environ["SENTENCE_TRANSFORMERS_HOME"] = "D:\\st_cache"
+        
     from sentence_transformers import SentenceTransformer
-    _embedding_model = SentenceTransformer("all-MiniLM-L6-v2")
+    local_model_path = ROOT / "data" / "all-MiniLM-L6-v2"
+    if local_model_path.exists():
+        print(f"Loading local sentence-transformers model from {local_model_path}...")
+        _embedding_model = SentenceTransformer(str(local_model_path))
+    else:
+        print("Loading remote sentence-transformers model 'all-MiniLM-L6-v2'...")
+        _embedding_model = SentenceTransformer("all-MiniLM-L6-v2")
     
     import chromadb
     print("Connecting to ChromaDB...")

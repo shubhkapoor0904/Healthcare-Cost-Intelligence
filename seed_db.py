@@ -4,9 +4,13 @@ import json
 import sqlite3
 from pathlib import Path
 
-# Redirect HuggingFace/SentenceTransformers models cache to D drive
-os.environ["HF_HOME"] = "D:\\hf_cache"
-os.environ["SENTENCE_TRANSFORMERS_HOME"] = "D:\\st_cache"
+# Redirect HuggingFace/SentenceTransformers models cache to D drive if available
+if os.environ.get("VERCEL") or not os.path.exists("D:\\"):
+    os.environ["HF_HOME"] = "/tmp/hf_cache"
+    os.environ["SENTENCE_TRANSFORMERS_HOME"] = "/tmp/st_cache"
+else:
+    os.environ["HF_HOME"] = "D:\\hf_cache"
+    os.environ["SENTENCE_TRANSFORMERS_HOME"] = "D:\\st_cache"
 
 ROOT = Path(__file__).resolve().parent
 DB_FILE = ROOT / "data" / "healthcare_cost.db"

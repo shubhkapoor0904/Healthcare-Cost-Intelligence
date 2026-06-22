@@ -1,11 +1,7 @@
 {
   "functions": {
     "api/index.py": {
-      "includeFiles": [
-        "data/hospitals.json",
-        "data/healthcare_cost.db",
-        "data/chroma_db/**"
-      ]
+      "includeFiles": "data/**"
     }
   },
   "env": {
@@ -13,6 +9,7 @@
   },
   "rewrites": [
     { "source": "/health", "destination": "/api/index.py" },
-    { "source": "/api/(.*)", "destination": "/api/index.py" }
+    { "source": "/api/(.*)", "destination": "/api/index.py" },
+    { "source": "/(.*)", "destination": "/frontend/index.html" }
   ]
 }
