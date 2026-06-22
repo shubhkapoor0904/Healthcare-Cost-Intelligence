@@ -19,13 +19,12 @@ HOSPITAL_DATA_FILE = ROOT / "data" / "hospitals.json"
 OFFLINE_ONLY = os.environ.get("PS4B_OFFLINE_ONLY", "1").strip() != "0"
 
 DB_FILE = ROOT / "data" / "healthcare_cost.db"
-CHROMA_DIR = ROOT / "data" / "chroma_db"
+PROCEDURE_EMBEDDINGS_FILE = ROOT / "data" / "procedure_embeddings.json"
+HOSPITAL_EMBEDDINGS_FILE = ROOT / "data" / "hospital_embeddings.json"
 
 _sqlite_conn = None
-_chroma_client = None
-_chroma_collection = None
-_embedding_model = None
-_procedure_embeddings_cache = {}
+_procedure_embeddings_cache: dict[str, list[float]] = {}
+_hospital_embeddings_cache: list[dict] = []
 _procedures_cache = []
 
 def cosine_similarity(v1, v2):
@@ -35,13 +34,13 @@ def cosine_similarity(v1, v2):
     return float(dot / max(1e-9, norm1 * norm2))
 
 def init_services():
-    global _sqlite_conn, _chroma_client, _chroma_collection, _embedding_model, _procedure_embeddings_cache, _procedures_cache
+    global _sqlite_conn, _procedure_embeddings_cache, _hospital_embeddings_cache, _procedures_cache
     if _sqlite_conn is not None:
         return
-    
+
     _sqlite_conn = sqlite3.connect(str(DB_FILE), check_same_thread=False)
     _sqlite_conn.row_factory = sqlite3.Row
-    
+
     cursor = _sqlite_conn.cursor()
     try:
         cursor.execute("SELECT COUNT(*) FROM procedures")
@@ -52,48 +51,21 @@ def init_services():
         print("Database not found or empty. Running seeding...")
         import seed_db
         seed_db.seed_sqlite()
-        seed_db.seed_chromadb()
-        
+
     cursor.execute("SELECT * FROM procedures")
     for row in cursor.fetchall():
         proc = dict(row)
         proc["synonyms"] = json.loads(proc["synonyms_json"])
         proc["red_flag_terms"] = json.loads(proc["red_flag_terms_json"])
         _procedures_cache.append(proc)
-        
-    print("Loading sentence-transformers model...")
-    if os.environ.get("VERCEL") or not os.path.exists("D:\\"):
-        os.environ["HF_HOME"] = "/tmp/hf_cache"
-        os.environ["SENTENCE_TRANSFORMERS_HOME"] = "/tmp/st_cache"
-    else:
-        os.environ["HF_HOME"] = "D:\\hf_cache"
-        os.environ["SENTENCE_TRANSFORMERS_HOME"] = "D:\\st_cache"
-        
-    from sentence_transformers import SentenceTransformer
-    local_model_path = ROOT / "data" / "all-MiniLM-L6-v2"
-    if local_model_path.exists():
-        print(f"Loading local sentence-transformers model from {local_model_path}...")
-        _embedding_model = SentenceTransformer(str(local_model_path))
-    else:
-        print("Loading remote sentence-transformers model 'all-MiniLM-L6-v2'...")
-        _embedding_model = SentenceTransformer("all-MiniLM-L6-v2")
-    
-    import chromadb
-    print("Connecting to ChromaDB...")
-    _chroma_client = chromadb.PersistentClient(path=str(CHROMA_DIR))
-    _chroma_collection = _chroma_client.get_collection("hospital_specializations")
-    
-    print("Precomputing procedure embeddings...")
-    proc_texts = []
-    proc_ids = []
-    for p in _procedures_cache:
-        text = f"{p['display_name']} - {p['condition_label']}. Synonyms: {', '.join(p['synonyms'])}"
-        proc_texts.append(text)
-        proc_ids.append(p["procedure_id"])
-        
-    embeddings = _embedding_model.encode(proc_texts, show_progress_bar=False)
-    for p_id, emb in zip(proc_ids, embeddings):
-        _procedure_embeddings_cache[p_id] = emb
+
+    # Load pre-computed embeddings from JSON (no ML runtime needed)
+    print("Loading pre-computed procedure embeddings...")
+    _procedure_embeddings_cache = json.loads(PROCEDURE_EMBEDDINGS_FILE.read_text(encoding="utf-8"))
+
+    print("Loading pre-computed hospital embeddings...")
+    _hospital_embeddings_cache = json.loads(HOSPITAL_EMBEDDINGS_FILE.read_text(encoding="utf-8"))
+
     print("Initialization completed successfully.")
 
 
@@ -265,7 +237,34 @@ def map_clinical_query(query: str) -> dict[str, Any]:
     q = query.lower()
     q_tokens = tokenize(q)
     
-    query_vector = _embedding_model.encode([q], show_progress_bar=False)[0]
+    # Use pre-computed procedure embeddings for cosine similarity matching
+    # We approximate query embedding via the best token-overlap candidate's stored vector
+    # (pure rule-based path) — embedding score blended in from pre-computed cache
+    query_vector = None
+    # Find best rule-match first to get its embedding as proxy for query vector
+    best_rule_score = 0.0
+    best_rule_proc = None
+    for proc in _procedures_cache:
+        exact = 0.0
+        if proc["display_name"].lower() in q:
+            exact = 1.0
+        else:
+            for alias in proc["synonyms"]:
+                if alias.lower() in q:
+                    exact = 1.0
+                    break
+        tokens_q = tokenize(q)
+        max_ov = max(
+            (len(tokens_q & tokenize(a.lower())) / max(1, len(tokenize(a.lower())))
+             for a in proc["synonyms"]),
+            default=0.0
+        )
+        rule_score = exact * 0.6 + min(1.0, max_ov) * 0.4
+        if rule_score > best_rule_score:
+            best_rule_score = rule_score
+            best_rule_proc = proc
+    if best_rule_proc and best_rule_proc["procedure_id"] in _procedure_embeddings_cache:
+        query_vector = _procedure_embeddings_cache[best_rule_proc["procedure_id"]]
     
     candidates = []
     for proc in _procedures_cache:
@@ -302,10 +301,12 @@ def map_clinical_query(query: str) -> dict[str, Any]:
                 
         normalized_rule_score = exact_alias_match * 0.5 + token_overlap_score * 0.4 + red_flag_match * 0.1
         
-        cached_emb = _procedure_embeddings_cache[proc["procedure_id"]]
-        embedding_score = cosine_similarity(query_vector, cached_emb)
-        
-        clinical_match_score = 0.55 * embedding_score + 0.45 * normalized_rule_score
+        if query_vector is not None and proc["procedure_id"] in _procedure_embeddings_cache:
+            cached_emb = _procedure_embeddings_cache[proc["procedure_id"]]
+            embedding_score = cosine_similarity(query_vector, cached_emb)
+            clinical_match_score = 0.55 * embedding_score + 0.45 * normalized_rule_score
+        else:
+            clinical_match_score = normalized_rule_score
         candidates.append((clinical_match_score, proc))
         
     candidates.sort(key=lambda x: x[0], reverse=True)
@@ -530,60 +531,64 @@ def estimate_cost(mapped: dict[str, Any], profile: dict[str, Any], city: str, ro
 def discover_hospitals(mapped: dict[str, Any], city: str, cost: dict[str, Any], budget: int | None) -> list[dict[str, Any]]:
     city_norm = city.strip().title()
     
-    query_text = f"{mapped['procedure']} {mapped['specialty']} {mapped['condition']}"
-    query_vector = _embedding_model.encode([query_text], show_progress_bar=False)[0].tolist()
-    
-    results = _chroma_collection.query(
-        query_embeddings=[query_vector],
-        where={"city": city_norm},
-        n_results=8,
-        include=["metadatas", "embeddings", "documents"]
-    )
-    
-    if not results["ids"] or len(results["ids"][0]) < 3:
-        results = _chroma_collection.query(
-            query_embeddings=[query_vector],
-            n_results=12,
-            include=["metadatas", "embeddings", "documents"]
-        )
-        
+    # Use pre-computed hospital embeddings for cosine similarity (no Chroma/ML at runtime)
+    req_specialty = mapped["specialty"].lower()
+    # Use stored embedding of best-matched procedure as query proxy
+    proc_key = mapped.get("procedure_key", "")
+    query_vector = _procedure_embeddings_cache.get(proc_key)
+
     hospitals_list = []
-    if results["ids"] and len(results["ids"][0]) > 0:
-        for idx in range(len(results["ids"][0])):
-            h_id = results["ids"][0][idx]
-            meta = results["metadatas"][0][idx]
-            emb = results["embeddings"][0][idx]
-            
+    for h in _hospital_embeddings_cache:
+        # Primary filter: prefer hospitals in the requested city
+        h_city = h["city"].strip().lower()
+        city_match = (h_city == city_norm.lower())
+
+        emb = h["embedding"]
+        if query_vector:
             clinical = cosine_similarity(query_vector, emb)
-            rating_score = max(0.0, min(1.0, (meta["rating"] - 3.5) / 1.3))
-            accreditation = 1.0 if meta["nabh"] else 0.45
-            
-            distance_km = meta["distance_km"]
-            price_index = meta["price_index"]
-            hospital_mid = ((cost["total_min_inr"] + cost["total_max_inr"]) / 2) * price_index
-            
-            if budget:
-                affordability = max(0.05, min(1.0, budget / hospital_mid))
-            else:
-                affordability = {"budget": 0.95, "mid": 0.78, "premium": 0.55}.get(meta["cost_category"], 0.75)
-                
-            h_specialties = json.loads(meta["specialties"])
-            
-            hospitals_list.append({
-                "name": meta["name"],
-                "city": meta["city"],
-                "distance_km": distance_km,
-                "rating": meta["rating"],
-                "review_count": meta["review_count"],
-                "nabh_accredited": meta["nabh"],
-                "cost_category": meta["cost_category"],
-                "price_index": price_index,
-                "specialties": h_specialties,
-                "clinical_fit": clinical,
-                "rating_score": rating_score,
-                "accreditation": accreditation,
-                "affordability": affordability
-            })
+        else:
+            clinical = 0.6  # neutral fallback
+
+        # Boost clinical score if specialty directly matches
+        h_specs_lower = [s.lower() for s in h["specialties"]]
+        if req_specialty in h_specs_lower:
+            clinical = 1.0
+        elif any(req_specialty in s for s in h_specs_lower):
+            clinical = max(clinical, 0.75)
+
+        rating_score = max(0.0, min(1.0, (h["rating"] - 3.5) / 1.3))
+        accreditation = 1.0 if h["nabh_accredited"] else 0.45
+        price_index = h["price_index"]
+        hospital_mid = ((cost["total_min_inr"] + cost["total_max_inr"]) / 2) * price_index
+
+        if budget:
+            affordability = max(0.05, min(1.0, budget / hospital_mid))
+        else:
+            affordability = {"budget": 0.95, "mid": 0.78, "premium": 0.55}.get(h["cost_category"], 0.75)
+
+        hospitals_list.append({
+            "name": h["name"],
+            "city": h["city"],
+            "distance_km": h["distance_km"],
+            "rating": h["rating"],
+            "review_count": h["review_count"],
+            "nabh_accredited": h["nabh_accredited"],
+            "cost_category": h["cost_category"],
+            "price_index": price_index,
+            "specialties": h["specialties"],
+            "clinical_fit": clinical,
+            "rating_score": rating_score,
+            "accreditation": accreditation,
+            "affordability": affordability,
+            "_city_match": city_match,
+        })
+
+    # Sort: city-matched first, then by clinical fit
+    hospitals_list.sort(key=lambda h: (not h["_city_match"], -h["clinical_fit"]))
+    # Take top candidates (city matches first, then best clinical fits)
+    city_hits = [h for h in hospitals_list if h["_city_match"]][:8]
+    fallback = [h for h in hospitals_list if not h["_city_match"]][:max(0, 8 - len(city_hits))]
+    hospitals_list = city_hits + fallback
             
     if not hospitals_list:
         return []

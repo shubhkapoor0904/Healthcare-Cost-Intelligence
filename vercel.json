@@ -4,9 +4,6 @@
       "includeFiles": "data/**"
     }
   },
-  "env": {
-    "HF_HOME": "/tmp/huggingface_cache"
-  },
   "rewrites": [
     { "source": "/health", "destination": "/api/index.py" },
     { "source": "/api/(.*)", "destination": "/api/index.py" },
