@@ -185,7 +185,12 @@ def load_hospitals() -> list[dict[str, Any]]:
     normalized = []
     for idx, row in enumerate(rows):
         cost_category = str(row.get("cost_category") or "mid").lower()
-        price_index = {"budget": 0.78, "mid": 1.0, "premium": 1.24}.get(cost_category, 1.0)
+        _base = {"budget": 0.78, "mid": 1.0, "premium": 1.24}.get(cost_category, 1.0)
+        # Per-hospital adjustment: rating (3.0–5.0 → ±0.08) + NABH bonus (0.04)
+        _rating = float(row.get("rating") or 4.0)
+        _rating_adj = (_rating - 4.0) / 25.0          # –0.04 … +0.04
+        _nabh_adj  = 0.04 if row.get("nabh_accredited") else 0.0
+        price_index = round(_base + _rating_adj + _nabh_adj, 4)
         normalized.append({
             "id": row.get("id") or f"hospital_{idx + 1:03d}",
             "name": str(row["name"]),
