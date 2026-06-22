@@ -6,36 +6,60 @@
   <title>PS4B Healthcare Cost Intelligence</title>
   <link rel="icon" href="data:,">
   <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap');
+
     :root {
       color-scheme: dark;
-      --bg: #101112;
-      --panel: #181a1b;
-      --panel-2: #202323;
-      --panel-3: #282c2b;
-      --text: #f4f2ec;
-      --muted: #bbb8ad;
-      --faint: #858176;
-      --line: #3d403d;
-      --green: #19c28d;
-      --violet: #8178e6;
-      --amber: #d38a25;
-      --blue: #50a7f3;
-      --red: #e46a64;
-      --radius: 8px;
-      --shadow: 0 18px 50px rgba(0, 0, 0, .28);
-      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --bg: #090a0c;
+      --panel: rgba(18, 22, 25, 0.55);
+      --panel-2: rgba(30, 36, 41, 0.7);
+      --panel-3: rgba(45, 54, 61, 0.85);
+      --text: #f3f4f6;
+      --muted: #9ca3af;
+      --faint: #4b5563;
+      --line: rgba(255, 255, 255, 0.08);
+      --green: #10b981;
+      --violet: #8b5cf6;
+      --amber: #f59e0b;
+      --blue: #3b82f6;
+      --red: #ef4444;
+      --radius: 16px;
+      --shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+      --font-body: 'Inter', ui-sans-serif, system-ui, sans-serif;
+      --font-heading: 'Plus Jakarta Sans', var(--font-body);
     }
 
     * { box-sizing: border-box; }
+    
+    /* Custom scrollbars */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(255, 255, 255, 0.02);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.12);
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(255, 255, 255, 0.2);
+    }
+
     body {
       margin: 0;
       min-height: 100vh;
-      background:
-        radial-gradient(circle at 82% 8%, rgba(25, 194, 141, .12), transparent 28%),
-        linear-gradient(180deg, #171819, var(--bg));
+      background: 
+        radial-gradient(circle at 10% 20%, rgba(139, 92, 246, 0.07) 0%, transparent 40%),
+        radial-gradient(circle at 90% 10%, rgba(16, 185, 129, 0.07) 0%, transparent 40%),
+        radial-gradient(circle at 50% 80%, rgba(59, 130, 246, 0.05) 0%, transparent 50%),
+        linear-gradient(180deg, #090a0c 0%, #111416 100%);
+      background-attachment: fixed;
       color: var(--text);
       font-size: 15px;
       line-height: 1.45;
+      font-family: var(--font-body);
     }
 
     button, input, select, textarea { font: inherit; }
@@ -44,7 +68,7 @@
     .shell {
       width: min(1320px, calc(100% - 28px));
       margin: 0 auto;
-      padding: 18px 0 34px;
+      padding: 24px 0 48px;
     }
 
     .topbar {
@@ -53,27 +77,39 @@
       justify-content: space-between;
       gap: 16px;
       min-height: 54px;
-      margin-bottom: 24px;
+      margin-bottom: 32px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      padding-bottom: 16px;
     }
 
     .brand {
       display: flex;
       align-items: center;
-      gap: 10px;
-      font-weight: 850;
-      letter-spacing: 0;
+      gap: 12px;
+      font-family: var(--font-heading);
+      font-weight: 800;
+      font-size: 20px;
+      letter-spacing: -0.01em;
+    }
+
+    .brand span:last-child {
+      background: linear-gradient(135deg, #ffffff 30%, #cbd5e1 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
     }
 
     .brand-mark {
-      width: 34px;
-      height: 34px;
+      width: 36px;
+      height: 36px;
       display: grid;
       place-items: center;
-      border: 1px solid var(--line);
+      border: 1px solid rgba(16, 185, 129, 0.3);
       border-radius: 8px;
       color: var(--green);
-      background: var(--panel);
-      font-size: 13px;
+      background: linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(59, 130, 246, 0.1) 100%);
+      font-size: 14px;
+      font-weight: 900;
+      box-shadow: 0 0 12px rgba(16, 185, 129, 0.25);
     }
 
     .status {
@@ -81,122 +117,166 @@
       align-items: center;
       gap: 8px;
       min-height: 34px;
-      padding: 6px 10px;
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      background: rgba(24, 26, 27, .8);
+      padding: 6px 14px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 20px;
+      background: rgba(18, 22, 25, 0.6);
       color: var(--muted);
       font-size: 12px;
-      font-weight: 700;
+      font-weight: 600;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
     }
 
     .status-dot {
-      width: 9px;
-      height: 9px;
+      width: 8px;
+      height: 8px;
       border-radius: 50%;
       background: var(--amber);
-      box-shadow: 0 0 0 4px rgba(211, 138, 37, .14);
+      box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.18);
+      position: relative;
     }
 
     .status.ok .status-dot {
       background: var(--green);
-      box-shadow: 0 0 0 4px rgba(25, 194, 141, .14);
+      box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.18);
     }
 
     .hero {
       display: grid;
       grid-template-columns: minmax(0, 1.05fr) minmax(330px, .95fr);
-      gap: 18px;
+      gap: 20px;
       align-items: stretch;
-      margin-bottom: 18px;
+      margin-bottom: 20px;
     }
 
     .intro, .query-card, .panel {
       border: 1px solid var(--line);
       border-radius: var(--radius);
-      background: rgba(24, 26, 27, .86);
+      background: var(--panel);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
       box-shadow: var(--shadow);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .intro:hover, .query-card:hover, .panel:hover {
+      border-color: rgba(255, 255, 255, 0.12);
+      box-shadow: 0 24px 48px rgba(0, 0, 0, 0.5), 0 0 30px rgba(16, 185, 129, 0.02);
     }
 
     .intro {
-      padding: 26px;
+      padding: 32px;
       min-height: 360px;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .intro::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, var(--green), var(--blue));
     }
 
     .eyebrow {
       color: var(--green);
-      font-size: 12px;
-      font-weight: 850;
+      font-size: 11px;
+      font-weight: 800;
       text-transform: uppercase;
+      letter-spacing: 0.08em;
     }
 
     h1, h2, h3, p { margin: 0; }
 
     h1 {
-      margin-top: 12px;
+      margin-top: 16px;
       max-width: 760px;
-      font-size: clamp(36px, 6vw, 76px);
-      line-height: .92;
-      letter-spacing: 0;
+      font-family: var(--font-heading);
+      font-size: clamp(28px, 4vw, 44px);
+      line-height: 1.1;
+      letter-spacing: -0.02em;
+      background: linear-gradient(135deg, #ffffff 40%, #a3a3a3 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
     }
 
     .intro-copy {
       max-width: 720px;
       margin-top: 18px;
       color: var(--muted);
-      font-size: 17px;
+      font-size: 16px;
+      line-height: 1.5;
     }
 
     .proof-grid {
       display: grid;
-      grid-template-columns: repeat(5, minmax(0, 1fr));
-      gap: 8px;
-      margin-top: 26px;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 32px;
     }
 
     .proof {
       min-height: 82px;
-      padding: 12px;
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      background: #121414;
+      padding: 14px;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.02);
+      transition: all 0.3s ease;
+    }
+
+    .proof:hover {
+      background: rgba(255, 255, 255, 0.04);
+      border-color: rgba(255, 255, 255, 0.1);
+      transform: translateY(-2px);
     }
 
     .proof b {
       display: block;
-      font-size: 20px;
+      font-size: 22px;
+      font-family: var(--font-heading);
+      font-weight: 800;
+      color: #fff;
       line-height: 1;
     }
 
     .proof span {
       display: block;
-      margin-top: 7px;
+      margin-top: 6px;
       color: var(--muted);
-      font-size: 12px;
-      font-weight: 650;
+      font-size: 11px;
+      font-weight: 500;
     }
 
     .query-card {
-      padding: 18px;
+      padding: 24px;
     }
 
     .query-card h2 {
-      font-size: 20px;
-      margin-bottom: 4px;
+      font-family: var(--font-heading);
+      font-size: 22px;
+      font-weight: 700;
+      margin-bottom: 6px;
+      letter-spacing: -0.01em;
     }
 
     .query-card > p {
       color: var(--muted);
-      margin-bottom: 14px;
+      font-size: 14px;
+      margin-bottom: 18px;
     }
 
     .form-grid {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 10px;
+      gap: 12px;
     }
 
     .field {
@@ -207,19 +287,22 @@
     .field.full { grid-column: 1 / -1; }
 
     label {
-      color: var(--muted);
+      color: #e5e7eb;
       font-size: 12px;
-      font-weight: 800;
+      font-weight: 650;
+      letter-spacing: 0.02em;
     }
 
     input, select, textarea {
       width: 100%;
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      background: #111313;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+      background: rgba(9, 11, 12, 0.6);
       color: var(--text);
-      padding: 10px 11px;
+      padding: 11px 13px;
       outline: none;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      backdrop-filter: blur(5px);
     }
 
     textarea {
@@ -229,58 +312,77 @@
 
     input:focus, select:focus, textarea:focus {
       border-color: var(--green);
-      box-shadow: 0 0 0 3px rgba(25, 194, 141, .14);
+      box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15), inset 0 2px 4px rgba(0, 0, 0, 0.3);
+      background: rgba(9, 11, 12, 0.85);
     }
 
     .quick-row {
       display: flex;
       gap: 8px;
       flex-wrap: wrap;
-      margin: 12px 0;
+      margin: 14px 0;
     }
 
     .chip, .primary, .secondary {
-      border: 1px solid var(--line);
-      border-radius: 8px;
       cursor: pointer;
-      transition: transform .15s ease, background .15s ease, border-color .15s ease;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
     .chip {
-      min-height: 30px;
-      padding: 5px 9px;
-      background: var(--panel-2);
-      color: var(--muted);
+      padding: 6px 12px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: #d1d5db;
       font-size: 12px;
-      font-weight: 750;
+      font-weight: 500;
+      border-radius: 999px;
     }
 
-    .chip:hover, .secondary:hover {
-      border-color: var(--green);
-      color: var(--text);
+    .chip:hover {
+      background: rgba(16, 185, 129, 0.1);
+      border-color: rgba(16, 185, 129, 0.4);
+      color: #fff;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.1);
     }
 
     .button-row {
       display: grid;
       grid-template-columns: 1fr auto;
-      gap: 10px;
-      margin-top: 14px;
+      gap: 12px;
+      margin-top: 18px;
     }
 
     .primary, .secondary {
       min-height: 44px;
-      padding: 10px 14px;
-      font-weight: 850;
+      padding: 10px 18px;
+      font-weight: 650;
+      border-radius: 10px;
     }
 
     .primary {
-      border-color: var(--green);
-      background: var(--green);
-      color: #06140f;
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      border: none;
+      color: #061510;
+      box-shadow: 0 4px 14px rgba(16, 185, 129, 0.3);
+    }
+
+    .primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(16, 185, 129, 0.45);
+      filter: brightness(1.1);
     }
 
     .secondary {
-      background: var(--panel-2);
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: #fff;
+    }
+
+    .secondary:hover {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: rgba(255, 255, 255, 0.2);
+      transform: translateY(-1px);
     }
 
     .primary:active, .secondary:active, .chip:active {
@@ -289,8 +391,8 @@
 
     .workbench {
       display: grid;
-      grid-template-columns: minmax(280px, .85fr) minmax(0, 1.15fr);
-      gap: 18px;
+      grid-template-columns: minmax(290px, .85fr) minmax(0, 1.15fr);
+      gap: 20px;
       align-items: start;
     }
 
@@ -303,16 +405,18 @@
       align-items: center;
       justify-content: space-between;
       gap: 10px;
-      padding: 15px 16px;
+      padding: 18px 20px;
       border-bottom: 1px solid var(--line);
     }
 
     .panel-head h2 {
+      font-family: var(--font-heading);
       font-size: 18px;
+      font-weight: 700;
     }
 
     .panel-body {
-      padding: 16px;
+      padding: 20px;
     }
 
     .empty {
@@ -324,79 +428,143 @@
       padding: 28px;
     }
 
+    .empty h3 {
+      font-family: var(--font-heading);
+      font-size: 18px;
+      font-weight: 600;
+      color: #fff;
+      margin-bottom: 8px;
+    }
+
+    .empty p {
+      font-size: 14px;
+      max-width: 320px;
+      margin: 0 auto;
+    }
+
     .flow-steps {
       display: grid;
-      gap: 8px;
+      gap: 10px;
     }
 
     .step {
       display: grid;
-      grid-template-columns: 36px 1fr;
-      gap: 10px;
+      grid-template-columns: 32px 1fr;
+      gap: 12px;
       align-items: start;
-      padding: 11px;
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      background: #121414;
+      padding: 12px 14px;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 12px;
+      background: rgba(14, 17, 19, 0.4);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
     .step-number {
-      width: 30px;
-      height: 30px;
+      width: 28px;
+      height: 28px;
       display: grid;
       place-items: center;
       border-radius: 8px;
-      background: var(--panel-3);
+      background: rgba(255, 255, 255, 0.05);
       color: var(--muted);
-      font-weight: 900;
+      font-weight: 800;
+      font-size: 13px;
+      transition: all 0.3s ease;
     }
 
-    .step.done .step-number { background: var(--green); color: #06140f; }
-    .step.active .step-number { background: var(--violet); color: white; }
+    .step.done {
+      border-color: rgba(16, 185, 129, 0.2);
+      background: rgba(16, 185, 129, 0.03);
+    }
+
+    .step.done .step-number { 
+      background: rgba(16, 185, 129, 0.15); 
+      color: var(--green); 
+    }
+
+    @keyframes activePulse {
+      0% {
+        box-shadow: 0 0 0 0 rgba(139, 92, 246, 0.4);
+        border-color: rgba(139, 92, 246, 0.6);
+      }
+      70% {
+        box-shadow: 0 0 0 6px rgba(139, 92, 246, 0);
+        border-color: rgba(139, 92, 246, 0.8);
+      }
+      100% {
+        box-shadow: 0 0 0 0 rgba(139, 92, 246, 0);
+        border-color: rgba(139, 92, 246, 0.6);
+      }
+    }
+
+    .step.active {
+      border-color: var(--violet);
+      background: rgba(139, 92, 246, 0.05);
+      animation: activePulse 2s infinite ease-in-out;
+    }
+
+    .step.active .step-number { 
+      background: var(--violet); 
+      color: #fff;
+      box-shadow: 0 0 10px rgba(139, 92, 246, 0.4);
+    }
 
     .step strong {
       display: block;
       font-size: 13px;
-      line-height: 1.2;
+      font-weight: 650;
+      color: #fff;
+      line-height: 1.3;
     }
 
     .step span {
       display: block;
-      margin-top: 3px;
+      margin-top: 4px;
       color: var(--muted);
       font-size: 12px;
+      line-height: 1.4;
     }
 
     .results-grid {
       display: grid;
-      gap: 14px;
+      gap: 18px;
     }
 
     .summary-row {
       display: grid;
       grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 10px;
+      gap: 12px;
     }
 
     .metric {
-      padding: 13px;
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      background: #121414;
+      padding: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.015);
+      transition: all 0.3s ease;
+    }
+
+    .metric:hover {
+      background: rgba(255, 255, 255, 0.03);
+      border-color: rgba(255, 255, 255, 0.08);
     }
 
     .metric span {
       color: var(--muted);
       display: block;
-      font-size: 12px;
-      font-weight: 800;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
     }
 
     .metric b {
       display: block;
-      margin-top: 6px;
-      font-size: 20px;
-      line-height: 1.1;
+      margin-top: 8px;
+      font-size: 18px;
+      font-weight: 800;
+      color: #fff;
+      line-height: 1.25;
     }
 
     .section-title {
@@ -404,49 +572,60 @@
       align-items: center;
       justify-content: space-between;
       gap: 10px;
-      margin: 4px 0 8px;
+      margin: 4px 0 10px;
     }
 
     .section-title h3 {
+      font-family: var(--font-heading);
       font-size: 16px;
+      font-weight: 700;
+      color: #fff;
     }
 
     .confidence {
-      min-width: 72px;
-      height: 28px;
-      border-radius: 999px;
-      display: inline-grid;
-      place-items: center;
-      color: #06140f;
-      background: var(--green);
-      font-size: 12px;
-      font-weight: 900;
+      padding: 4px 12px;
+      border-radius: 20px;
+      color: #fff;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
     }
 
     .cost-list {
       display: grid;
-      gap: 8px;
+      gap: 10px;
     }
 
     .cost-item {
-      padding: 12px;
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      background: #121414;
+      padding: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.015);
+      transition: all 0.3s ease;
+    }
+
+    .cost-item:hover {
+      background: rgba(255, 255, 255, 0.03);
+      border-color: rgba(255, 255, 255, 0.08);
+      transform: translateY(-1px);
     }
 
     .cost-top {
       display: flex;
       justify-content: space-between;
       gap: 12px;
-      font-weight: 850;
+      font-weight: 700;
+      color: #fff;
+      font-size: 14px;
     }
 
     .bar {
-      height: 8px;
+      height: 6px;
       border-radius: 999px;
-      background: var(--panel-3);
-      margin: 9px 0 7px;
+      background: rgba(255, 255, 255, 0.05);
+      margin: 12px 0 10px;
       overflow: hidden;
     }
 
@@ -455,23 +634,34 @@
       height: 100%;
       width: var(--w, 60%);
       background: linear-gradient(90deg, var(--green), var(--blue));
+      border-radius: 999px;
+      box-shadow: 0 0 8px rgba(16, 185, 129, 0.5);
     }
 
     .cost-item p {
       color: var(--muted);
-      font-size: 12px;
+      font-size: 13px;
+      line-height: 1.45;
     }
 
     .hospital-list {
       display: grid;
-      gap: 10px;
+      gap: 12px;
     }
 
     .hospital {
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      background: #121414;
-      padding: 14px;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.015);
+      padding: 20px;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .hospital:hover {
+      background: rgba(255, 255, 255, 0.035);
+      border-color: rgba(255, 255, 255, 0.1);
+      transform: translateY(-2px);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
     }
 
     .hospital-top {
@@ -482,120 +672,1090 @@
     }
 
     .hospital h3 {
-      font-size: 17px;
-      margin-bottom: 3px;
+      font-family: var(--font-heading);
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 4px;
+      color: #fff;
     }
 
     .hospital-meta {
       color: var(--muted);
       font-size: 12px;
-      font-weight: 700;
+      font-weight: 500;
     }
 
     .score {
-      min-width: 56px;
-      min-height: 42px;
-      border: 1px solid rgba(25, 194, 141, .5);
-      border-radius: 8px;
+      min-width: 52px;
+      min-height: 52px;
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      border-radius: 50%;
       display: grid;
       place-items: center;
       color: var(--green);
-      font-weight: 900;
-      background: rgba(25, 194, 141, .08);
+      font-weight: 800;
+      font-size: 16px;
+      background: rgba(16, 185, 129, 0.05);
+      box-shadow: 0 0 15px rgba(16, 185, 129, 0.15);
+      transition: all 0.3s ease;
+    }
+
+    .hospital:hover .score {
+      background: rgba(16, 185, 129, 0.1);
+      box-shadow: 0 0 20px rgba(16, 185, 129, 0.25);
+      transform: scale(1.05);
     }
 
     .tags {
       display: flex;
       flex-wrap: wrap;
       gap: 6px;
-      margin: 10px 0;
+      margin: 12px 0;
     }
 
     .tag {
-      padding: 3px 7px;
-      border: 1px solid var(--line);
-      border-radius: 999px;
-      color: var(--muted);
+      padding: 4px 10px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 20px;
+      color: #d1d5db;
       font-size: 11px;
-      font-weight: 750;
+      font-weight: 600;
+      background: rgba(255, 255, 255, 0.02);
+      transition: all 0.2s ease;
+    }
+
+    .tag:hover {
+      background: rgba(255, 255, 255, 0.05);
+      border-color: rgba(255, 255, 255, 0.15);
     }
 
     .reason {
-      color: var(--muted);
-      font-size: 13px;
+      color: #d1d5db;
+      font-size: 13.5px;
+      line-height: 1.5;
     }
 
     .subscores {
       display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 6px;
-      margin-top: 11px;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 16px;
     }
 
     .subscore {
       border-radius: 8px;
-      background: var(--panel-2);
-      padding: 7px;
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid rgba(255, 255, 255, 0.04);
+      padding: 8px;
       font-size: 11px;
       color: var(--muted);
+      text-align: center;
+      transition: all 0.2s ease;
+    }
+
+    .subscore:hover {
+      background: rgba(255, 255, 255, 0.04);
+      border-color: rgba(255, 255, 255, 0.08);
     }
 
     .subscore b {
-      color: var(--text);
+      color: #fff;
+      font-size: 14px;
+      display: block;
+      margin-bottom: 2px;
     }
 
     .disclaimer {
-      border: 1px solid rgba(211, 138, 37, .55);
+      border: 1px solid rgba(245, 158, 11, 0.35);
       border-left: 4px solid var(--amber);
-      border-radius: 8px;
-      padding: 12px;
-      color: var(--muted);
-      background: rgba(211, 138, 37, .08);
+      border-radius: 12px;
+      padding: 16px;
+      color: #d1d5db;
+      background: rgba(245, 158, 11, 0.05);
+      font-size: 13px;
+      line-height: 1.5;
     }
 
     .error {
-      border: 1px solid rgba(228, 106, 100, .55);
+      border: 1px solid rgba(239, 68, 68, 0.35);
       border-left: 4px solid var(--red);
-      border-radius: 8px;
-      padding: 12px;
-      color: var(--text);
-      background: rgba(228, 106, 100, .08);
+      border-radius: 12px;
+      padding: 16px;
+      color: #fca5a5;
+      background: rgba(239, 68, 68, 0.05);
+      font-size: 13.5px;
+      line-height: 1.5;
     }
 
     .loading {
-      opacity: .7;
+      opacity: .8;
       pointer-events: none;
     }
+
+    /* Keyframes for fadeInUp entrance animation */
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(16px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .fade-in-up {
+      opacity: 0;
+      animation: fadeInUp 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    /* Stagger delays */
+    .stagger-1 { animation-delay: 0.05s; }
+    .stagger-2 { animation-delay: 0.1s; }
+    .stagger-3 { animation-delay: 0.15s; }
+    .stagger-4 { animation-delay: 0.2s; }
+    .stagger-5 { animation-delay: 0.25s; }
+    .stagger-6 { animation-delay: 0.3s; }
+    .stagger-7 { animation-delay: 0.35s; }
+    .stagger-8 { animation-delay: 0.4s; }
 
     @media (max-width: 980px) {
       .hero, .workbench {
         grid-template-columns: 1fr;
       }
-      .proof-grid, .summary-row, .subscores {
+      .proof-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+      .summary-row {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+      .subscores {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
       }
     }
 
     @media (max-width: 620px) {
       .shell {
         width: min(100% - 16px, 1320px);
-        padding-top: 8px;
+        padding-top: 12px;
       }
       .topbar {
         align-items: start;
         flex-direction: column;
+        gap: 12px;
       }
       .intro, .query-card, .panel-body {
-        padding: 14px;
+        padding: 18px;
       }
       h1 {
-        font-size: 36px;
+        font-size: 26px;
       }
-      .form-grid, .proof-grid, .summary-row, .subscores {
+      .form-grid, .proof-grid, .summary-row {
         grid-template-columns: 1fr;
       }
       .button-row {
         grid-template-columns: 1fr;
+      }
+      .subscores {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    /* COLLAPSIBLE SETTINGS & SEARCH-FIRST */
+    .advanced-settings-wrapper {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease, margin-top 0.3s ease;
+      opacity: 0;
+      margin-top: 0;
+    }
+    .advanced-settings-wrapper.expanded {
+      max-height: 500px;
+      opacity: 1;
+      margin-top: 16px;
+      overflow: visible;
+    }
+    .btn-toggle-advanced {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      padding: 10px 14px;
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 10px;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      margin-top: 12px;
+    }
+    .btn-toggle-advanced:hover {
+      background: rgba(255, 255, 255, 0.04);
+      border-color: rgba(255, 255, 255, 0.1);
+      color: #fff;
+    }
+    .btn-toggle-advanced .arrow {
+      font-size: 12px;
+      transition: transform 0.3s ease;
+    }
+    .btn-toggle-advanced.active .arrow {
+      transform: rotate(180deg);
+    }
+
+    /* DYNAMIC EXTRACTED PARAMETERS CHIPS */
+    .detected-parameters {
+      margin-top: 14px;
+      padding: 10px 14px;
+      background: rgba(16, 185, 129, 0.03);
+      border: 1px dashed rgba(16, 185, 129, 0.2);
+      border-radius: 10px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+    }
+    .detected-parameters.hidden {
+      display: none;
+    }
+    .detected-title {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--green);
+      margin-right: 4px;
+    }
+    .detected-chip {
+      font-size: 12px;
+      font-weight: 600;
+      padding: 4px 10px;
+      background: rgba(16, 185, 129, 0.1);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      color: #fff;
+      border-radius: 99px;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      animation: popIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    @keyframes popIn {
+      0% { transform: scale(0.8); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    /* RESULTS TABS SYSTEM */
+    .tabs-nav {
+      display: flex;
+      gap: 4px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      margin-bottom: 20px;
+      background: rgba(9, 11, 12, 0.4);
+      border-radius: 12px;
+      padding: 4px;
+    }
+    .tab-btn {
+      flex: 1;
+      padding: 10px 14px;
+      background: transparent;
+      border: none;
+      color: var(--muted);
+      font-weight: 600;
+      font-size: 13.5px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .tab-btn:hover {
+      color: #fff;
+      background: rgba(255, 255, 255, 0.03);
+    }
+    .tab-btn.active {
+      color: #061510;
+      background: var(--green);
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
+    }
+    .tab-panel {
+      display: none;
+      animation: tabFadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+    .tab-panel.active {
+      display: block;
+    }
+    @keyframes tabFadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* SUMMARY HERO PANEL */
+    .summary-hero {
+      background: linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, rgba(59, 130, 246, 0.08) 100%);
+      border: 1px solid rgba(16, 185, 129, 0.25);
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 20px;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: center;
+      gap: 24px;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+    }
+    .summary-hero::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle at 30% 30%, rgba(16, 185, 129, 0.06) 0%, transparent 60%);
+      pointer-events: none;
+    }
+    .summary-hero-main {
+      position: relative;
+      z-index: 1;
+    }
+    .summary-hero-label {
+      font-size: 11px;
+      font-weight: 800;
+      color: var(--green);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+    .summary-hero-cost {
+      font-size: clamp(26px, 3.5vw, 38px);
+      font-weight: 900;
+      color: #fff;
+      margin: 6px 0 10px;
+      font-family: var(--font-heading);
+      letter-spacing: -0.015em;
+      background: linear-gradient(135deg, #ffffff 40%, #a3a3a3 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .summary-hero-desc {
+      font-size: 14.5px;
+      color: #d1d5db;
+    }
+    .summary-hero-desc strong {
+      color: #fff;
+    }
+    .summary-hero-stats {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      min-width: 150px;
+      border-left: 1px solid rgba(255, 255, 255, 0.08);
+      padding-left: 24px;
+      position: relative;
+      z-index: 1;
+    }
+    .hero-stat {
+      display: flex;
+      flex-direction: column;
+    }
+    .hero-stat span {
+      font-size: 11px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      font-weight: 600;
+    }
+    .hero-stat b {
+      font-size: 15px;
+      color: #fff;
+      font-weight: 700;
+      margin-top: 2px;
+    }
+    @media (max-width: 640px) {
+      .summary-hero {
+        grid-template-columns: 1fr;
+        gap: 16px;
+      }
+      .summary-hero-stats {
+        border-left: none;
+        padding-left: 0;
+        border-top: 1px solid rgba(255, 255, 255, 0.08);
+        padding-top: 16px;
+        flex-direction: row;
+        justify-content: space-between;
+      }
+    }
+
+    /* CARD WRAPPER */
+    .card {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--panel);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      padding: 24px;
+      margin-bottom: 20px;
+      transition: all 0.3s ease;
+    }
+    .card:hover {
+      border-color: rgba(255, 255, 255, 0.12);
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.3);
+    }
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      padding-bottom: 12px;
+    }
+    .card-header h3 {
+      font-family: var(--font-heading);
+      font-size: 16px;
+      font-weight: 700;
+      color: #fff;
+      margin: 0;
+    }
+    .drift-status {
+      font-size: 12px;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .drift-status .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+    .drift-status .status-dot.green {
+      background: var(--green);
+      box-shadow: 0 0 8px var(--green);
+    }
+    .drift-status .status-dot.amber {
+      background: var(--amber);
+      box-shadow: 0 0 8px var(--amber);
+    }
+
+    /* COST COMPONENT PROGRESS BARS */
+    .bar-container {
+      height: 8px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 99px;
+      margin: 10px 0;
+      overflow: hidden;
+    }
+    .bar-fill {
+      height: 100%;
+      border-radius: 99px;
+      background: linear-gradient(90deg, var(--green) 0%, var(--blue) 100%);
+      box-shadow: 0 0 12px rgba(16, 185, 129, 0.4);
+      transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .cost-info {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-weight: 600;
+    }
+    .cost-label {
+      color: #fff;
+      font-size: 14px;
+    }
+    .cost-range {
+      color: #fff;
+      font-size: 14px;
+    }
+    .cost-why {
+      font-size: 12.5px;
+      color: var(--muted);
+      margin-top: 4px;
+      line-height: 1.4;
+    }
+    .cost-item {
+      padding: 14px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    }
+    .cost-item:last-child {
+      border-bottom: none;
+      padding-bottom: 0;
+    }
+    .cost-item:first-child {
+      padding-top: 0;
+    }
+
+    /* BUDGET SLIDER CARD */
+    .budget-slider-card {
+      background: rgba(18, 22, 25, 0.45);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: var(--radius);
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: var(--shadow);
+    }
+    .slider-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 14px;
+      gap: 16px;
+    }
+    .slider-header label {
+      font-size: 14px;
+      font-weight: 700;
+      color: #fff;
+    }
+    .slider-desc {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+    .slider-value {
+      font-family: var(--font-heading);
+      font-size: 20px;
+      font-weight: 800;
+      color: var(--green);
+      text-shadow: 0 0 10px rgba(16, 185, 129, 0.2);
+    }
+    .budget-slider {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 6px;
+      border-radius: 99px;
+      background: rgba(255, 255, 255, 0.1);
+      outline: none;
+      margin: 8px 0;
+      cursor: pointer;
+    }
+    .budget-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: var(--green);
+      cursor: pointer;
+      box-shadow: 0 0 8px rgba(16, 185, 129, 0.8);
+      transition: transform 0.1s ease;
+    }
+    .budget-slider::-webkit-slider-thumb:hover {
+      transform: scale(1.2);
+    }
+
+    /* PREMIUM HOSPITAL CARDS & REAL-TIME HIGHLIGHTS */
+    .hospital-card {
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: var(--radius);
+      background: rgba(18, 22, 25, 0.4);
+      padding: 20px;
+      margin-bottom: 16px;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      position: relative;
+    }
+    .hospital-card.within-budget {
+      border-color: rgba(16, 185, 129, 0.25);
+      background: rgba(16, 185, 129, 0.02);
+    }
+    .hospital-card.over-budget {
+      opacity: 0.55;
+      border-color: rgba(239, 68, 68, 0.15);
+      background: rgba(239, 68, 68, 0.01);
+    }
+    .hospital-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+      border-color: rgba(255, 255, 255, 0.12);
+    }
+    .hospital-card.within-budget:hover {
+      border-color: rgba(16, 185, 129, 0.45);
+      box-shadow: 0 10px 30px rgba(16, 185, 129, 0.08);
+    }
+    .hospital-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: start;
+      gap: 16px;
+    }
+    .hospital-details {
+      flex: 1;
+    }
+    .hospital-title-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .hospital-title-row h3 {
+      font-family: var(--font-heading);
+      font-size: 18px;
+      font-weight: 700;
+      color: #fff;
+      margin: 0;
+    }
+    .budget-badge {
+      font-size: 10px;
+      font-weight: 800;
+      padding: 3px 8px;
+      border-radius: 99px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .hospital-card.within-budget .budget-badge {
+      background: rgba(16, 185, 129, 0.15);
+      color: var(--green);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+    .hospital-card.within-budget .budget-badge::after {
+      content: 'Within Budget';
+    }
+    .hospital-card.over-budget .budget-badge {
+      background: rgba(239, 68, 68, 0.15);
+      color: var(--red);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+    .hospital-card.over-budget .budget-badge::after {
+      content: 'Exceeds Budget';
+    }
+    .hospital-meta {
+      display: flex;
+      gap: 14px;
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 500;
+      flex-wrap: wrap;
+    }
+    .score-circle {
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      border: 1.5px solid rgba(16, 185, 129, 0.3);
+      background: rgba(16, 185, 129, 0.05);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 15px rgba(16, 185, 129, 0.1);
+      flex-shrink: 0;
+      transition: all 0.3s ease;
+    }
+    .hospital-card:hover .score-circle {
+      transform: scale(1.06);
+      background: rgba(16, 185, 129, 0.12);
+      box-shadow: 0 0 20px rgba(16, 185, 129, 0.2);
+    }
+    .score-num {
+      font-size: 16px;
+      font-weight: 800;
+      color: var(--green);
+      line-height: 1;
+    }
+    .score-label {
+      font-size: 9px;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+      margin-top: 1px;
+    }
+    .hospital-card-body {
+      margin-top: 14px;
+    }
+    .hospital-est-row {
+      display: flex;
+      justify-content: space-between;
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid rgba(255, 255, 255, 0.04);
+      padding: 10px 14px;
+      border-radius: 8px;
+      margin-bottom: 12px;
+      font-size: 13.5px;
+    }
+    .est-label {
+      color: var(--muted);
+      font-weight: 550;
+    }
+    .est-value {
+      color: #fff;
+      font-weight: 700;
+    }
+    .hospital-reason {
+      color: #d1d5db;
+      font-size: 13.5px;
+      line-height: 1.45;
+      margin: 0 0 12px;
+    }
+    .tag-strength {
+      border-color: rgba(16, 185, 129, 0.3) !important;
+      color: var(--green) !important;
+      background: rgba(16, 185, 129, 0.02) !important;
+    }
+    .tag-tradeoff {
+      border-color: rgba(245, 158, 11, 0.3) !important;
+      color: var(--amber) !important;
+      background: rgba(245, 158, 11, 0.02) !important;
+    }
+    .tag-medical {
+      border-color: rgba(139, 92, 246, 0.3) !important;
+      color: var(--violet) !important;
+      background: rgba(139, 92, 246, 0.03) !important;
+    }
+
+    /* SCORE ACCORDIONS UNDER PROGRESSIVE DISCLOSURE */
+    .details-accordion {
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+      margin-top: 14px;
+      padding-top: 10px;
+    }
+    .accordion-trigger {
+      background: transparent;
+      border: none;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 600;
+      padding: 4px 0;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      width: 100%;
+      text-align: left;
+      outline: none;
+    }
+    .accordion-trigger:hover {
+      color: #fff;
+    }
+    .accordion-trigger .chevron {
+      transition: transform 0.3s ease;
+      font-size: 10px;
+    }
+    .accordion-trigger.active .chevron {
+      transform: rotate(180deg);
+    }
+    .accordion-content {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s ease;
+      opacity: 0;
+    }
+    .accordion-content.expanded {
+      max-height: 120px;
+      opacity: 1;
+      margin-top: 10px;
+    }
+    .subscores-grid {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 8px;
+    }
+    .subscore-item {
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid rgba(255, 255, 255, 0.04);
+      padding: 8px 4px;
+      font-size: 10px;
+      color: var(--muted);
+      text-align: center;
+      transition: all 0.2s ease;
+    }
+    .subscore-item b {
+      color: #fff;
+      font-size: 13.5px;
+      display: block;
+      margin-bottom: 2px;
+    }
+    .subscore-item span {
+      display: block;
+      transform: scale(0.95);
+    }
+    @media (max-width: 520px) {
+      .subscores-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+    }
+
+    /* CLINICAL & CONFIDENCE ANALYSIS GRIDS */
+    .grid-2-col {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 20px;
+    }
+    @media (max-width: 768px) {
+      .grid-2-col {
+        grid-template-columns: 1fr;
+      }
+    }
+    .analysis-detail {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .detail-row {
+      display: flex;
+      justify-content: space-between;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+      padding-bottom: 8px;
+      font-size: 13.5px;
+    }
+    .detail-row span {
+      color: var(--muted);
+    }
+    .detail-row b {
+      color: #fff;
+    }
+    .hospital-sub-card {
+      background: rgba(255, 255, 255, 0.01);
+      border: 1px solid rgba(255, 255, 255, 0.04);
+      border-radius: 10px;
+      padding: 14px;
+      margin-top: 14px;
+    }
+    .hospital-sub-card h4 {
+      margin: 0 0 10px;
+      font-size: 13px;
+      color: #fff;
+      font-family: var(--font-heading);
+    }
+    .clinical-note {
+      font-size: 13px;
+      color: var(--muted);
+      margin-top: 10px;
+      line-height: 1.4;
+    }
+    .confidence-exp {
+      font-size: 14px;
+      color: #d1d5db;
+      line-height: 1.45;
+    }
+    .confidence-reasons {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .confidence-reason-item {
+      font-size: 12.5px;
+      padding: 8px 12px;
+      border-radius: 8px;
+      border: 1px solid transparent;
+    }
+    .confidence-reason-item.positive {
+      background: rgba(16, 185, 129, 0.05);
+      border-color: rgba(16, 185, 129, 0.15);
+      color: #a7f3d0;
+    }
+    .confidence-reason-item.negative {
+      background: rgba(239, 68, 68, 0.05);
+      border-color: rgba(239, 68, 68, 0.15);
+      color: #fca5a5;
+    }
+
+    /* COLLAPSIBLE DISCLAIMER AT FOOTER */
+    .disclaimer-collapsible {
+      border: 1px solid rgba(245, 158, 11, 0.2);
+      border-radius: 12px;
+      background: rgba(245, 158, 11, 0.03);
+      margin-top: 24px;
+      overflow: hidden;
+    }
+    .disclaimer-trigger {
+      width: 100%;
+      background: transparent;
+      border: none;
+      padding: 14px 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: var(--amber);
+      font-weight: 700;
+      font-size: 13px;
+      cursor: pointer;
+      text-align: left;
+      outline: none;
+    }
+    .disclaimer-trigger:hover {
+      background: rgba(245, 158, 11, 0.06);
+    }
+    .disclaimer-trigger .chevron {
+      transition: transform 0.3s ease;
+    }
+    .disclaimer-trigger.active .chevron {
+      transform: rotate(180deg);
+    }
+    .disclaimer-content {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+      padding: 0 18px;
+      color: #9ca3af;
+      font-size: 12.5px;
+      line-height: 1.5;
+    }
+    .disclaimer-content.expanded {
+      max-height: 200px;
+      padding-bottom: 16px;
+    }
+
+    /* GLOSSARY TOOLTIPS */
+    .tooltip-trigger {
+      position: relative;
+      border-bottom: 1px dotted var(--muted);
+      cursor: help;
+      display: inline-block;
+    }
+    .tooltip-trigger::after {
+      content: attr(data-tooltip);
+      position: absolute;
+      bottom: 125%;
+      left: 50%;
+      transform: translateX(-50%) scale(0.9);
+      background: #111827;
+      color: #fff;
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 11.5px;
+      width: 220px;
+      white-space: normal;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 100;
+      line-height: 1.4;
+      font-weight: normal;
+      text-transform: none;
+      letter-spacing: normal;
+    }
+    .tooltip-trigger:hover::after {
+      opacity: 1;
+      transform: translateX(-50%) scale(1);
+    }
+
+    /* SCREEN-BY-SCREEN FLOW SEGREGATION & TRANSITIONS */
+    .screen-container {
+      position: relative;
+      width: 100%;
+      min-height: 480px;
+    }
+    
+    .screen {
+      display: none;
+      width: 100%;
+    }
+    
+    .screen.active {
+      display: block;
+      animation: screenSlideIn 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+    
+    @keyframes screenSlideIn {
+      from {
+        opacity: 0;
+        transform: translateX(35px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+    
+    @keyframes pulse {
+      0%, 100% { opacity: 0.6; transform: scale(1); }
+      50% { opacity: 1; transform: scale(1.1); }
+    }
+
+    /* STEP PROGRESS BAR TRACKER */
+    .step-tracker {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 36px;
+      background: rgba(18, 22, 25, 0.45);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 14px;
+      padding: 12px 24px;
+      max-width: 680px;
+      margin-left: auto;
+      margin-right: auto;
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    }
+    
+    .tracker-step {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 13.5px;
+      font-weight: 600;
+      transition: all 0.3s ease;
+    }
+    
+    .tracker-step.active {
+      color: #fff;
+    }
+    
+    .tracker-step.completed {
+      color: var(--green);
+    }
+    
+    .step-dot {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      font-size: 11px;
+      font-weight: 800;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: var(--muted);
+      transition: all 0.3s ease;
+    }
+    
+    .tracker-step.active .step-dot {
+      background: var(--violet);
+      border-color: var(--violet);
+      color: #fff;
+      box-shadow: 0 0 10px rgba(139, 92, 246, 0.4);
+    }
+    
+    .tracker-step.completed .step-dot {
+      background: var(--green);
+      border-color: var(--green);
+      color: #061510;
+      box-shadow: 0 0 10px rgba(16, 185, 129, 0.25);
+    }
+    
+    .tracker-line {
+      flex: 1;
+      height: 1px;
+      background: rgba(255, 255, 255, 0.08);
+      margin: 0 16px;
+      transition: all 0.3s ease;
+    }
+    
+    .tracker-line.completed {
+      background: var(--green);
+      box-shadow: 0 0 6px rgba(16, 185, 129, 0.3);
+    }
+    
+    @media (max-width: 520px) {
+      .step-tracker {
+        padding: 10px 14px;
+        margin-bottom: 24px;
+      }
+      .tracker-step .step-name {
+        display: none;
+      }
+      .tracker-line {
+        margin: 0 8px;
       }
     }
   </style>
@@ -607,13 +1767,37 @@
       <div class="status" id="apiStatus"><span class="status-dot"></span><span>Checking API</span></div>
     </header>
 
-    <main>
-      <section class="hero">
+    <!-- Header Step Tracker Bar -->
+    <div class="step-tracker" id="stepTracker">
+      <div class="tracker-step active" id="track-welcome" data-target="welcome">
+        <span class="step-dot">1</span>
+        <span class="step-name">Welcome</span>
+      </div>
+      <div class="tracker-line" id="line-welcome"></div>
+      <div class="tracker-step" id="track-query" data-target="query">
+        <span class="step-dot">2</span>
+        <span class="step-name">Clinical Input</span>
+      </div>
+      <div class="tracker-line" id="line-query"></div>
+      <div class="tracker-step" id="track-pipeline" data-target="pipeline">
+        <span class="step-dot">3</span>
+        <span class="step-name">Analysis Pipeline</span>
+      </div>
+      <div class="tracker-line" id="line-pipeline"></div>
+      <div class="tracker-step" id="track-results" data-target="results">
+        <span class="step-dot">4</span>
+        <span class="step-name">Cost Report</span>
+      </div>
+    </div>
+
+    <main class="screen-container">
+      <!-- SCREEN 1: WELCOME & OVERVIEW -->
+      <section class="screen active" id="screen-welcome">
         <div class="intro">
           <div>
             <div class="eyebrow">Working product MVP</div>
             <h1>Find care options with explainable treatment cost ranges.</h1>
-            <p class="intro-copy">Enter a symptom or procedure, location, profile, and budget. The product maps the clinical intent, estimates a 5-part cost range, ranks hospitals, and shows confidence with a verification warning.</p>
+            <p class="intro-copy" style="margin-bottom: 24px;">Enter a symptom or procedure, location, profile, and budget. The product maps the clinical intent, estimates a 5-part cost range, ranks hospitals, and shows confidence with a verification warning.</p>
           </div>
           <div class="proof-grid" aria-label="Product capabilities">
             <div class="proof"><b>50</b><span>seeded procedures</span></div>
@@ -622,47 +1806,78 @@
             <div class="proof"><b id="billingMode">Safe</b><span id="billingText">offline, no billing</span></div>
           </div>
         </div>
+        <div style="display:flex; justify-content:center; margin-top:32px;">
+          <button class="primary" style="padding: 14px 36px; font-size:16px; border-radius:12px; min-height:52px; display:inline-flex; align-items:center; gap:8px;" onclick="navigateToScreen('query')">
+            Get Started ➔
+          </button>
+        </div>
+      </section>
 
-        <section class="query-card" aria-labelledby="query-title">
-          <h2 id="query-title">Patient Query</h2>
+      <!-- SCREEN 2: CLINICAL INPUT -->
+      <section class="screen" id="screen-query">
+        <section class="query-card" aria-labelledby="query-title" style="margin-bottom: 0;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; gap: 16px;">
+            <h2 id="query-title">Patient Query</h2>
+            <button class="secondary" style="padding: 6px 12px; font-size:12px; min-height:30px; border-radius:8px;" type="button" onclick="navigateToScreen('welcome')">
+              ← Welcome Screen
+            </button>
+          </div>
           <p>Try realistic inputs. This MVP is offline-first: static hospital data, synthetic ratings, rule-based mapping, and deterministic local scoring.</p>
           <form id="queryForm">
             <div class="field full">
               <label for="query">Symptom or procedure</label>
-              <textarea id="query" name="query" required>knee pain, Nagpur, 45yo, diabetic</textarea>
+              <textarea id="query" name="query" placeholder="Type a symptom or procedure, city, age, and details (e.g., knee pain, Nagpur, 45yo, diabetic)..." required>knee pain, Nagpur, 45yo, diabetic</textarea>
             </div>
+            
             <div class="quick-row" aria-label="Example queries">
               <button class="chip" type="button" data-example="chest pain while walking, diabetic, Mumbai">Cardiac</button>
               <button class="chip" type="button" data-example="pregnancy delivery package, Pune">Maternity</button>
               <button class="chip" type="button" data-example="cataract surgery for my father age 68, Nagpur">Cataract</button>
               <button class="chip" type="button" data-example="kidney stone pain, Delhi, private room">Kidney stone</button>
             </div>
-            <div class="form-grid">
-              <div class="field">
-                <label for="city">City</label>
-                <input id="city" name="city" value="Nagpur" autocomplete="address-level2">
-              </div>
-              <div class="field">
-                <label for="age">Age</label>
-                <input id="age" name="age" type="number" min="0" max="120" value="45">
-              </div>
-              <div class="field">
-                <label for="room_type">Room preference</label>
-                <select id="room_type" name="room_type">
-                  <option value="general">General</option>
-                  <option value="private">Private</option>
-                  <option value="icu">ICU likely</option>
-                </select>
-              </div>
-              <div class="field">
-                <label for="budget">Budget INR</label>
-                <input id="budget" name="budget" inputmode="numeric" value="300000">
-              </div>
-              <div class="field full">
-                <label for="comorbidities">Comorbidities</label>
-                <input id="comorbidities" name="comorbidities" value="diabetes" placeholder="diabetes, hypertension">
+
+            <!-- Auto-detected parameters feedback -->
+            <div class="detected-parameters" id="detectedParams">
+              <span class="detected-title">Extracted Context:</span>
+              <div id="detectedChips" style="display:flex; flex-wrap:wrap; gap:6px;"></div>
+            </div>
+
+            <!-- Collapsible manual override button -->
+            <button type="button" class="btn-toggle-advanced" id="toggleAdvanced">
+              <span>Modify Extracted Parameters</span>
+              <span class="arrow">▼</span>
+            </button>
+
+            <!-- Collapsible manual options -->
+            <div class="advanced-settings-wrapper" id="advancedSettings">
+              <div class="form-grid" style="padding: 4px 0 12px;">
+                <div class="field">
+                  <label for="city">City</label>
+                  <input id="city" name="city" value="Nagpur" autocomplete="address-level2">
+                </div>
+                <div class="field">
+                  <label for="age">Age</label>
+                  <input id="age" name="age" type="number" min="0" max="120" value="45">
+                </div>
+                <div class="field">
+                  <label for="room_type">Room preference</label>
+                  <select id="room_type" name="room_type">
+                    <option value="general">General</option>
+                    <option value="private">Private</option>
+                    <option value="icu">ICU likely</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label for="budget">Budget INR</label>
+                  <input id="budget" name="budget" inputmode="numeric" value="300000">
+                </div>
+                <div class="field full">
+                  <label for="comorbidities">Comorbidities</label>
+                  <input id="comorbidities" name="comorbidities" value="diabetes" placeholder="diabetes, hypertension">
+                </div>
               </div>
             </div>
+
             <div class="button-row">
               <button class="primary" id="runButton" type="submit">Run cost intelligence</button>
               <button class="secondary" id="resetButton" type="button">Reset</button>
@@ -671,36 +1886,46 @@
         </section>
       </section>
 
-      <section class="workbench">
-        <aside class="panel" aria-labelledby="pipeline-title">
-          <div class="panel-head">
-            <h2 id="pipeline-title">Pipeline</h2>
-            <span class="status ok"><span class="status-dot"></span><span>Offline engines</span></span>
-          </div>
-          <div class="panel-body">
-            <div class="flow-steps" id="flowSteps">
-              <div class="step"><div class="step-number">1</div><div><strong>Clinical mapper</strong><span>Symptom to condition, procedure, ICD-10, severity.</span></div></div>
-              <div class="step"><div class="step-number">2</div><div><strong>Cost lookup</strong><span>Benchmark procedure x city tier base ranges.</span></div></div>
-              <div class="step"><div class="step-number">3</div><div><strong>Cost adjustment</strong><span>Age, diabetes, room type, ICU probability.</span></div></div>
-              <div class="step"><div class="step-number">4</div><div><strong>Provider retrieval</strong><span>Static hospital dataset + local specialization retrieval.</span></div></div>
-              <div class="step"><div class="step-number">5</div><div><strong>Ranking + confidence</strong><span>Weighted score and explainable confidence.</span></div></div>
-              <div class="step"><div class="step-number">6</div><div><strong>Response assembly</strong><span>Hospital cards, cost accordion, disclaimer.</span></div></div>
+      <!-- SCREEN 3: PIPELINE EXECUTION -->
+      <section class="screen" id="screen-pipeline">
+        <div style="max-width: 620px; margin: 0 auto;">
+          <aside class="panel" aria-labelledby="pipeline-title" style="margin-bottom: 24px;">
+            <div class="panel-head">
+              <h2 id="pipeline-title">Clinical Processing Pipeline</h2>
+              <span class="status ok"><span class="status-dot"></span><span>Running Engine</span></span>
             </div>
-          </div>
-        </aside>
-
-        <section class="panel" aria-labelledby="results-title">
-          <div class="panel-head">
-            <h2 id="results-title">Results</h2>
-            <span id="requestId" class="hospital-meta">No query yet</span>
-          </div>
-          <div class="panel-body" id="results">
-            <div class="empty">
-              <div>
-                <h3>Run a query to generate recommendations.</h3>
-                <p>The output will include clinical mapping, 5-component costs, ranked providers, confidence, and a disclaimer.</p>
+            <div class="panel-body">
+              <div class="flow-steps" id="flowSteps">
+                <div class="step"><div class="step-number">1</div><div><strong>Clinical mapper</strong><span>Symptom to condition, procedure, ICD-10, severity.</span></div></div>
+                <div class="step"><div class="step-number">2</div><div><strong>Cost lookup</strong><span>Benchmark procedure x city tier base ranges.</span></div></div>
+                <div class="step"><div class="step-number">3</div><div><strong>Cost adjustment</strong><span>Age, diabetes, room type, ICU probability.</span></div></div>
+                <div class="step"><div class="step-number">4</div><div><strong>Provider retrieval</strong><span>Static hospital dataset + local specialization retrieval.</span></div></div>
+                <div class="step"><div class="step-number">5</div><div><strong>Ranking + confidence</strong><span>Weighted score and explainable confidence.</span></div></div>
+                <div class="step"><div class="step-number">6</div><div><strong>Response assembly</strong><span>Hospital cards, cost accordion, disclaimer.</span></div></div>
               </div>
             </div>
+          </aside>
+          <div style="text-align:center; padding:16px 12px; color:var(--muted); font-size:14px; font-weight:600; background:rgba(255,255,255,0.02); border-radius:12px; border:1px solid rgba(255,255,255,0.04);">
+            <span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:var(--violet); margin-right:8px; animation: pulse 1.5s infinite ease-in-out;"></span>
+            Calculating cost ranges and mapping clinical intent...
+          </div>
+        </div>
+      </section>
+
+      <!-- SCREEN 4: COST REPORT (RESULTS) -->
+      <section class="screen" id="screen-results">
+        <section class="panel" aria-labelledby="results-title" style="margin-bottom: 0;">
+          <div class="panel-head" style="padding: 16px 20px;">
+            <div style="display:flex; align-items:center; gap:16px;">
+              <button class="secondary" style="padding: 6px 12px; font-size:12px; min-height:30px; border-radius:8px;" onclick="navigateToScreen('query')">
+                ← New Query
+              </button>
+              <h2 id="results-title" style="margin:0; font-size:18px;">Analysis Results</h2>
+            </div>
+            <span id="requestId" class="hospital-meta">No query yet</span>
+          </div>
+          <div class="panel-body" id="results" style="padding: 20px;">
+            <!-- Rendered Tabbed Layout here -->
           </div>
         </section>
       </section>
@@ -785,6 +2010,207 @@
       setPipeline(steps.length);
     }
 
+    const citiesList = ["Mumbai", "Delhi", "Bengaluru", "Bangalore", "Chennai", "Hyderabad", "Kolkata", "Pune", "Nagpur", "Jaipur", "Lucknow", "Indore", "Surat", "Bhopal", "Kochi", "Mysuru"];
+
+    // COLLAPSIBLE ADVANCED SETTINGS
+    const toggleAdvanced = document.getElementById("toggleAdvanced");
+    const advancedSettings = document.getElementById("advancedSettings");
+    
+    toggleAdvanced.addEventListener("click", () => {
+      toggleAdvanced.classList.toggle("active");
+      advancedSettings.classList.toggle("expanded");
+      if (advancedSettings.classList.contains("expanded")) {
+        toggleAdvanced.querySelector("span:first-child").textContent = "Hide Manual Parameters";
+      } else {
+        toggleAdvanced.querySelector("span:first-child").textContent = "Modify Extracted Parameters";
+      }
+    });
+
+    // AUTO-DETECTION NATURAL LANGUAGE PARSER
+    function parseQueryParameters() {
+      const q = document.getElementById("query").value.toLowerCase();
+      let detected = {};
+
+      // 1. Detect City
+      for (const city of citiesList) {
+        if (q.includes(city.toLowerCase())) {
+          detected.city = city;
+          document.getElementById("city").value = city;
+          break;
+        }
+      }
+
+      // 2. Detect Age
+      const ageMatch = q.match(/\b(\d+)\s*(?:yo|y\/o|years?|yrs?|yr|age)\b/) || q.match(/\bage\s*(\d+)\b/);
+      if (ageMatch) {
+        detected.age = ageMatch[1];
+        document.getElementById("age").value = ageMatch[1];
+      }
+
+      // 3. Detect Budget
+      const budgetMatch = q.match(/\b(?:budget|inr|rs\.?|rupees?|price|cost)?\s*(?:of\s*)?(\d+(?:\.\d+)?)\s*(k|lakhs?|lacs?|l|cr|crores?|thousand)?\b/);
+      if (budgetMatch) {
+        let val = parseFloat(budgetMatch[1]);
+        const suffix = budgetMatch[2];
+        const hasContext = /budget|inr|rs|rupees|price|cost/.test(budgetMatch[0]);
+        if (suffix || hasContext) {
+          if (suffix === "k" || suffix === "thousand") val *= 1000;
+          else if (/lakh|lac/.test(suffix)) val *= 100000;
+          else if (/cr|crore/.test(suffix)) val *= 10000000;
+          detected.budget = Math.round(val);
+          document.getElementById("budget").value = detected.budget;
+        }
+      }
+
+      // 4. Detect Room type
+      if (q.includes("private")) {
+        detected.room_type = "private";
+        document.getElementById("room_type").value = "private";
+      } else if (q.includes("icu")) {
+        detected.room_type = "icu";
+        document.getElementById("room_type").value = "icu";
+      } else if (q.includes("general")) {
+        detected.room_type = "general";
+        document.getElementById("room_type").value = "general";
+      }
+
+      // 5. Detect comorbidities
+      let comorbidities = [];
+      if (/diabet|sugar/.test(q)) comorbidities.push("diabetes");
+      if (/hypertension|bp|pressure/.test(q)) comorbidities.push("hypertension");
+      if (/kidney|renal|dialysis|creatinine/.test(q)) comorbidities.push("kidney_disease");
+      if (/heart|cardiac|stent|bypass|angio/.test(q)) comorbidities.push("cardiac_history");
+      if (/stroke|paralysis/.test(q)) comorbidities.push("stroke");
+      if (comorbidities.length > 0) {
+        detected.comorbidities = comorbidities;
+        document.getElementById("comorbidities").value = comorbidities.join(", ");
+      }
+
+      renderDetectedChips(detected);
+    }
+
+    function renderDetectedChips(detected) {
+      const container = document.getElementById("detectedChips");
+      const block = document.getElementById("detectedParams");
+      container.innerHTML = "";
+
+      let hasChips = false;
+
+      if (detected.city) {
+        container.innerHTML += `<span class="detected-chip">📍 City: ${detected.city}</span>`;
+        hasChips = true;
+      }
+      if (detected.age) {
+        container.innerHTML += `<span class="detected-chip">👤 Age: ${detected.age}</span>`;
+        hasChips = true;
+      }
+      if (detected.room_type) {
+        container.innerHTML += `<span class="detected-chip">🏥 Room: ${detected.room_type}</span>`;
+        hasChips = true;
+      }
+      if (detected.budget) {
+        const valLakh = detected.budget >= 100000 ? `${(detected.budget / 100000).toFixed(1)}L` : `${detected.budget / 1000}k`;
+        container.innerHTML += `<span class="detected-chip">💰 Budget: ₹${valLakh}</span>`;
+        hasChips = true;
+      }
+      if (detected.comorbidities && detected.comorbidities.length > 0) {
+        detected.comorbidities.forEach(c => {
+          container.innerHTML += `<span class="detected-chip">✚ ${c.replace("_", " ")}</span>`;
+        });
+        hasChips = true;
+      }
+
+      if (hasChips) {
+        block.classList.remove("hidden");
+      } else {
+        block.classList.add("hidden");
+      }
+    }
+
+    // Bind real-time input extraction
+    document.getElementById("query").addEventListener("input", parseQueryParameters);
+
+    // TABS SYSTEM BINDING
+    function initTabNavigation() {
+      const tabs = document.querySelectorAll(".tab-btn");
+      const panels = document.querySelectorAll(".tab-panel");
+
+      tabs.forEach(tab => {
+        tab.addEventListener("click", () => {
+          tabs.forEach(t => {
+            t.classList.remove("active");
+            t.setAttribute("aria-selected", "false");
+          });
+          panels.forEach(p => p.classList.remove("active"));
+
+          tab.classList.add("active");
+          tab.setAttribute("aria-selected", "true");
+          const target = tab.getAttribute("data-tab");
+          document.getElementById(`panel-${target}`).classList.add("active");
+        });
+      });
+    }
+
+    // ACCORDIONS AND COLLAPSIBLE DETAILS
+    function initAccordions() {
+      document.querySelectorAll(".accordion-trigger").forEach(trigger => {
+        trigger.addEventListener("click", () => {
+          const content = trigger.nextElementSibling;
+          trigger.classList.toggle("active");
+          content.classList.toggle("expanded");
+        });
+      });
+
+      const disclaimerTrigger = document.querySelector(".disclaimer-trigger");
+      const disclaimerContent = document.querySelector(".disclaimer-content");
+      if (disclaimerTrigger && disclaimerContent) {
+        disclaimerTrigger.addEventListener("click", () => {
+          disclaimerTrigger.classList.toggle("active");
+          disclaimerContent.classList.toggle("expanded");
+        });
+      }
+    }
+
+    // REAL-TIME BUDGET SLIDER HIGHLIGHTS
+    function initBudgetSlider(initialBudget) {
+      const slider = document.getElementById("budgetSlider");
+      const valueDisplay = document.getElementById("budgetSliderVal");
+      if (!slider) return;
+
+      const updateSliderValue = (val) => {
+        valueDisplay.textContent = inr(val);
+        
+        const hospitalCards = document.querySelectorAll(".hospital-card");
+        hospitalCards.forEach(card => {
+          const midVal = parseFloat(card.getAttribute("data-mid"));
+
+          if (val < midVal) {
+            card.classList.remove("within-budget");
+            card.classList.add("over-budget");
+          } else {
+            card.classList.remove("over-budget");
+            card.classList.add("within-budget");
+          }
+        });
+      };
+
+      slider.addEventListener("input", (e) => {
+        updateSliderValue(parseInt(e.target.value));
+      });
+
+      // Run initially
+      updateSliderValue(initialBudget || parseInt(slider.value));
+    }
+
+    function parseBudgetJS(raw) {
+      if (raw === null || raw === undefined || raw === "" || raw === 0) {
+        return 300000;
+      }
+      let cleaned = String(raw).replace(/[^\d]/g, "");
+      let parsed = parseInt(cleaned, 10);
+      return isNaN(parsed) ? 300000 : parsed;
+    }
+
     function render(data) {
       requestId.textContent = data.request_id;
       const mapping = data.clinical_mapping;
@@ -792,19 +2218,26 @@
       const conf = data.confidence;
       const maxTotal = Math.max(...cost.components.map((item) => item.max_inr));
       const isNoMatch = mapping.procedure_key === "__no_match__";
+      const budgetVal = parseBudgetJS(document.getElementById("budget").value) || 300000;
+
+      // Verify that 5-component breakdown dynamically matches total estimates
+      const componentMinSum = cost.components.reduce((sum, item) => sum + item.min_inr, 0);
+      const componentMaxSum = cost.components.reduce((sum, item) => sum + item.max_inr, 0);
+      const isDriftFree = (componentMinSum === cost.total_min_inr) && (componentMaxSum === cost.total_max_inr);
+      console.log(`Reconciliation verification: Min Sum = ${componentMinSum} (Expected: ${cost.total_min_inr}), Max Sum = ${componentMaxSum} (Expected: ${cost.total_max_inr}). Drift Free: ${isDriftFree}`);
 
       // Confidence badge colour based on level
       const confColors = { high: "var(--green)", medium: "var(--amber)", low: "var(--red)" };
       const confColor = confColors[conf.level] || "var(--amber)";
-      const confBadge = `<span class="confidence" style="background:${confColor}">${conf.level.toUpperCase()} ${Math.round(conf.score * 100)}%</span>`;
+      const confBadge = `<span class="confidence" style="background:${confColor};color:${conf.level === 'high' ? '#061510' : '#fff'}">${conf.level.toUpperCase()} ${Math.round(conf.score * 100)}%</span>`;
 
       // No-match banner
       const noMatchBanner = isNoMatch ? `
-        <div class="error" style="margin-bottom:14px">
+        <div class="error fade-in-up" style="margin-bottom:20px">
           <strong>⚠ We couldn't confidently map your query</strong><br>
           ${escapeHtml(mapping.clarifying_question)}<br><br>
-          <strong>Try one of these:</strong>
-          <div class="tags" style="margin-top:8px">
+          <strong>Try one of these suggestions:</strong>
+          <div class="tags" style="margin-top:10px">
             ${(mapping.example_suggestions || []).map((s) => `<button class="chip suggestion-chip" type="button" data-suggestion="${escapeHtml(s)}">${escapeHtml(s)}</button>`).join("")}
           </div>
         </div>
@@ -812,119 +2245,284 @@
 
       // Low-confidence caution
       const cautionBanner = conf.caution ? `
-        <div class="error" style="border-color:rgba(211,138,37,.55);border-left-color:var(--amber);background:rgba(211,138,37,.08);margin-bottom:14px">
+        <div class="error fade-in-up" style="border-color:rgba(211,138,37,.55);border-left-color:var(--amber);background:rgba(211,138,37,.08);margin-bottom:20px">
           <strong>${escapeHtml(conf.caution)}</strong>
         </div>
       ` : "";
 
       results.innerHTML = `
-        <div class="results-grid">
-          ${noMatchBanner}
-          ${cautionBanner}
-
-          <div class="summary-row">
-            <div class="metric"><span>Mapped procedure</span><b>${escapeHtml(mapping.procedure)}</b></div>
-            <div class="metric"><span>Total estimate</span><b>${inr(cost.total_min_inr)} – ${inr(cost.total_max_inr)}</b></div>
-            <div class="metric"><span>ICD-10 / severity</span><b>${escapeHtml(mapping.icd10_code)} · ${escapeHtml(mapping.severity)}</b></div>
+        <div class="results-layout fade-in-up">
+          <!-- Results tab bar -->
+          <div class="tabs-nav" role="tablist">
+            <button class="tab-btn active" role="tab" aria-selected="true" data-tab="overview">
+              📊 Overview & Costs
+            </button>
+            <button class="tab-btn" role="tab" aria-selected="false" data-tab="hospitals">
+              🏥 Providers (${data.hospitals.length})
+            </button>
+            <button class="tab-btn" role="tab" aria-selected="false" data-tab="analysis">
+              🔍 Clinical & Confidence
+            </button>
           </div>
 
-          <div>
-            <div class="section-title">
-              <h3>Clinical mapping</h3>
-              ${confBadge}
-            </div>
-            <div class="hospital">
-              <div class="hospital-meta">Condition: ${escapeHtml(mapping.condition)} · Specialty: ${escapeHtml(mapping.specialty)} · Ambiguity: ${escapeHtml(mapping.ambiguity_score)}</div>
-              <div class="tags">
-                ${(mapping.comorbidity_flags || []).map((flag) => `<span class="tag">${escapeHtml(flag)}</span>`).join("") || `<span class="tag">no comorbidity flags detected</span>`}
-                <span class="tag">city tier: ${escapeHtml(cost.city_tier)}</span>
-                <span class="tag">room: ${escapeHtml(cost.room_type)}</span>
-              </div>
-              ${mapping.clarifying_question && !isNoMatch ? `<p class="reason">💡 ${escapeHtml(mapping.clarifying_question)}</p>` : (!isNoMatch ? `<p class="reason">✓ Mapping is specific enough to continue without a clarification step.</p>` : "")}
-            </div>
-          </div>
+          <div class="tab-panels">
+            <!-- TAB 1: OVERVIEW & COSTS -->
+            <div class="tab-panel active" id="panel-overview" role="tabpanel">
+              ${noMatchBanner}
+              ${cautionBanner}
 
-          <div>
-            <div class="section-title">
-              <h3>Confidence</h3>
-              ${confBadge}
-            </div>
-            <div class="hospital">
-              <p class="reason" style="margin-bottom:8px"><strong>${escapeHtml(conf.explanation)}</strong></p>
-              <div class="tags">
-                ${conf.reasons.map((r) => `<span class="tag">${escapeHtml(r)}</span>`).join("")}
-              </div>
-            </div>
-          </div>
-
-          <div>
-            <div class="section-title"><h3>5-component cost breakdown</h3><span class="hospital-meta">ranges, not point estimates</span></div>
-            <div class="cost-list">
-              ${cost.components.map((item) => {
-                const width = Math.max(8, Math.round((item.max_inr / maxTotal) * 100));
-                return `
-                  <div class="cost-item">
-                    <div class="cost-top"><span>${escapeHtml(item.label)}</span><span>${inr(item.min_inr)} – ${inr(item.max_inr)}</span></div>
-                    <div class="bar"><span style="--w:${width}%"></span></div>
-                    <p>${escapeHtml(item.why)}</p>
+              <div class="summary-hero fade-in-up">
+                <div class="summary-hero-main">
+                  <span class="summary-hero-label">TOTAL COST RANGE</span>
+                  <h2 class="summary-hero-cost">${inr(cost.total_min_inr)} – ${inr(cost.total_max_inr)}</h2>
+                  <p class="summary-hero-desc">Estimated package price for <strong>${escapeHtml(mapping.procedure)}</strong></p>
+                </div>
+                <div class="summary-hero-stats">
+                  <div class="hero-stat">
+                    <span>ICD-10 Code <span class="tooltip-trigger" data-tooltip="International Classification of Diseases, Tenth Revision. Standard billing code for health conditions.">❓</span></span>
+                    <b>${escapeHtml(mapping.icd10_code)}</b>
                   </div>
-                `;
-              }).join("")}
-            </div>
-          </div>
+                  <div class="hero-stat">
+                    <span>City Context</span>
+                    <b>${escapeHtml(cost.city_tier)} tier</b>
+                  </div>
+                </div>
+              </div>
 
-          <div>
-            <div class="section-title"><h3>Ranked hospitals</h3><span class="hospital-meta">${data.hospitals.length} options</span></div>
-            <div class="hospital-list">
-              ${data.hospitals.map((h, index) => `
-                <article class="hospital">
-                  <div class="hospital-top">
+              <!-- Cost breakdown components -->
+              <div class="card fade-in-up">
+                <div class="card-header">
+                  <h3>5-Component Cost Breakdown</h3>
+                  <span class="drift-status">
+                    ${isDriftFree ? '<span class="status-dot green"></span> Sum matches total estimate' : '<span class="status-dot amber"></span> Reconciled estimate'}
+                  </span>
+                </div>
+                <div class="cost-list">
+                  ${cost.components.map((item) => {
+                    const width = Math.max(8, Math.round((item.max_inr / maxTotal) * 100));
+                    return `
+                      <div class="cost-item">
+                        <div class="cost-info">
+                          <span class="cost-label">${escapeHtml(item.label)}</span>
+                          <span class="cost-range">${inr(item.min_inr)} – ${inr(item.max_inr)}</span>
+                        </div>
+                        <div class="bar-container"><div class="bar-fill" style="width:${width}%"></div></div>
+                        <p class="cost-why">${escapeHtml(item.why)}</p>
+                      </div>
+                    `;
+                  }).join("")}
+                </div>
+              </div>
+            </div>
+
+            <!-- TAB 2: RANKED PROVIDERS -->
+            <div class="tab-panel" id="panel-hospitals" role="tabpanel">
+              <!-- Budget Filter Slider -->
+              <div class="budget-slider-card fade-in-up">
+                <div class="slider-header">
+                  <div>
+                    <label for="budgetSlider">Highlight Providers Within Budget</label>
+                    <div class="slider-desc">Visual indicators update instantly based on selection</div>
+                  </div>
+                  <div class="slider-value" id="budgetSliderVal">${inr(budgetVal)}</div>
+                </div>
+                <input type="range" class="budget-slider" id="budgetSlider" min="15000" max="1500000" step="5000" value="${budgetVal}">
+              </div>
+
+              <div class="hospital-list">
+                ${data.hospitals.length === 0 ? `
+                  <div class="empty">
                     <div>
-                      <h3>${index + 1}. ${escapeHtml(h.name)}</h3>
-                      <div class="hospital-meta">${escapeHtml(h.city)} · ${h.distance_km} km · ${h.rating}★ · ${h.review_count || h.reviews} reviews · ${h.nabh_accredited || h.nabh ? "NABH ✓" : "NABH ✗"} · ${escapeHtml(h.cost_category)} cost</div>
+                      <h3>No providers found in this city.</h3>
+                      <p>Try searching in Nagpur, Pune, Mumbai, Delhi, or Bengaluru.</p>
                     </div>
-                    <div class="score">${Math.round(h.score * 100)}</div>
                   </div>
-                  <div class="tags">
-                    ${h.specialties.map((s) => `<span class="tag">${escapeHtml(s)}</span>`).join("")}
-                    <span class="tag">${inr(h.estimated_min_inr)} – ${inr(h.estimated_max_inr)}</span>
+                ` : data.hospitals.map((h, idx) => {
+                  const estMid = (h.estimated_min_inr + h.estimated_max_inr) / 2;
+                  return `
+                    <article class="hospital-card fade-in-up" data-min="${h.estimated_min_inr}" data-max="${h.estimated_max_inr}" data-mid="${estMid}">
+                      <div class="hospital-card-header">
+                        <div class="hospital-details">
+                          <div class="hospital-title-row">
+                            <h3>${idx + 1}. ${escapeHtml(h.name)}</h3>
+                            <span class="budget-badge"></span>
+                          </div>
+                          <div class="hospital-meta">
+                            <span>📍 ${escapeHtml(h.city)} (${h.distance_km} km)</span>
+                            <span>⭐ ${h.rating}★ (${h.review_count || h.reviews} reviews)</span>
+                            <span>🏛️ ${h.nabh_accredited || h.nabh ? "NABH Accredited <span class='tooltip-trigger' data-tooltip='National Accreditation Board for Hospitals. Certified for premium patient safety and care standards.'>❓</span>" : "No Accreditation"}</span>
+                          </div>
+                        </div>
+                        <div class="score-circle">
+                          <span class="score-num">${Math.round(h.score * 100)}</span>
+                          <span class="score-label">score</span>
+                        </div>
+                      </div>
+
+                      <div class="hospital-card-body">
+                        <div class="hospital-est-row">
+                          <span class="est-label">Estimated Charge:</span>
+                          <span class="est-value">${inr(h.estimated_min_inr)} – ${inr(h.estimated_max_inr)}</span>
+                        </div>
+                        
+                        <p class="hospital-reason">${escapeHtml(h.reason)}</p>
+
+                        <div class="tags">
+                          ${(h.key_strengths || []).map((s) => `<span class="tag tag-strength">✦ ${escapeHtml(s)}</span>`).join("")}
+                          ${h.tradeoff ? `<span class="tag tag-tradeoff">⚖ ${escapeHtml(h.tradeoff)}</span>` : ""}
+                        </div>
+
+                        <!-- Score breakdown accordions -->
+                        <div class="details-accordion">
+                          <button class="accordion-trigger" type="button">
+                            <span>Hospital detailed scoring factors</span>
+                            <span class="chevron">▾</span>
+                          </button>
+                          <div class="accordion-content">
+                            <div class="subscores-grid">
+                              <div class="subscore-item"><b>${h.subscores.clinical}</b><span>Clinical Fit</span></div>
+                              <div class="subscore-item"><b>${h.subscores.rating}</b><span>Reviews</span></div>
+                              <div class="subscore-item"><b>${h.subscores.accreditation}</b><span>Accreditation</span></div>
+                              <div class="subscore-item"><b>${h.subscores.affordability}</b><span>Affordability</span></div>
+                              <div class="subscore-item"><b>${h.subscores.distance}</b><span>Accessibility</span></div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </article>
+                  `;
+                }).join("")}
+              </div>
+            </div>
+
+            <!-- TAB 3: CLINICAL & CONFIDENCE -->
+            <div class="tab-panel" id="panel-analysis" role="tabpanel">
+              <div class="grid-2-col">
+                <div class="card fade-in-up">
+                  <div class="card-header">
+                    <h3>Clinical Extraction</h3>
                   </div>
-                  <div class="tags">
-                    ${(h.key_strengths || []).map((s) => `<span class="tag" style="border-color:rgba(25,194,141,.4);color:var(--green)">✦ ${escapeHtml(s)}</span>`).join("")}
-                    ${h.tradeoff ? `<span class="tag" style="border-color:rgba(211,138,37,.4);color:var(--amber)">⚖ ${escapeHtml(h.tradeoff)}</span>` : ""}
+                  <div class="analysis-detail">
+                    <div class="detail-row"><span>Mapped Condition</span><b>${escapeHtml(mapping.condition)}</b></div>
+                    <div class="detail-row"><span>ICD-10 Categorization <span class="tooltip-trigger" data-tooltip="Standard international code system for health classification.">❓</span></span><b>${escapeHtml(mapping.icd10_code)}</b></div>
+                    <div class="detail-row"><span>Clinical Specialty</span><b>${escapeHtml(mapping.specialty)}</b></div>
+                    <div class="detail-row"><span>Severity Rating</span><b>${escapeHtml(mapping.severity).toUpperCase()}</b></div>
+                    <div class="detail-row">
+                      <span>Ambiguity Score <span class="tooltip-trigger" data-tooltip="Measure of confidence mapping the text query to seeded medical structures. Higher is more ambiguous.">❓</span></span>
+                      <b>${escapeHtml(mapping.ambiguity_score)}</b>
+                    </div>
                   </div>
-                  <p class="reason">${escapeHtml(h.reason)}</p>
-                  <div class="subscores">
-                    <div class="subscore"><b>${h.subscores.clinical}</b><br>clinical</div>
-                    <div class="subscore"><b>${h.subscores.rating}</b><br>rating</div>
-                    <div class="subscore"><b>${h.subscores.accreditation}</b><br>NABH</div>
-                    <div class="subscore"><b>${h.subscores.affordability}</b><br>afford</div>
-                    <div class="subscore"><b>${h.subscores.distance}</b><br>distance</div>
+                  <div class="hospital-sub-card">
+                    <h4>Active Comorbidity & Patient Profiles</h4>
+                    <div class="tags">
+                      ${(mapping.comorbidity_flags || []).map((flag) => `<span class="tag tag-medical">${escapeHtml(flag)}</span>`).join("") || `<span class="tag">No comorbidities detected</span>`}
+                      <span class="tag">City Tier: ${escapeHtml(cost.city_tier)}</span>
+                      <span class="tag">Selected Room: ${escapeHtml(cost.room_type)}</span>
+                    </div>
+                    ${mapping.clarifying_question && !isNoMatch ? `<p class="clinical-note">💡 ${escapeHtml(mapping.clarifying_question)}</p>` : (!isNoMatch ? `<p class="clinical-note">✓ Mapping is specific enough to continue without a clarification step.</p>` : "")}
                   </div>
-                </article>
-              `).join("")}
+                </div>
+
+                <div class="card fade-in-up">
+                  <div class="card-header">
+                    <h3>Confidence Matrix</h3>
+                    ${confBadge}
+                  </div>
+                  <div class="confidence-card-body">
+                    <p class="confidence-exp"><strong>${escapeHtml(conf.explanation)}</strong></p>
+                    
+                    <h4 style="margin: 20px 0 10px; font-size:12px; letter-spacing:0.05em; color:var(--muted)">CONFIDENCE SCORE FACTORS:</h4>
+                    <div class="confidence-reasons">
+                      ${conf.reasons.map((r) => {
+                        let isPositive = r.includes("coverage 95") || r.includes("provider options") || r.includes("Matches cleanly") || r.includes("0 ambiguity") || !r.includes("Few") && !r.includes("ambiguity") && !r.includes("No procedure") && !r.includes("Elderly") && !r.includes("comorbidities") && !r.includes("ICU");
+                        let prefix = isPositive ? "✅" : "⚠️";
+                        let colorClass = isPositive ? "positive" : "negative";
+                        return `<div class="confidence-reason-item ${colorClass}">${prefix} ${escapeHtml(r)}</div>`;
+                      }).join("")}
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
-          <div class="disclaimer">
-            ${escapeHtml(data.disclaimer)}
+          <div class="disclaimer-collapsible fade-in-up">
+            <button class="disclaimer-trigger" type="button">
+              <span>Read Legal Medical Disclaimer</span>
+              <span class="chevron">▾</span>
+            </button>
+            <div class="disclaimer-content">
+              ${escapeHtml(data.disclaimer)}
+            </div>
           </div>
         </div>
       `;
+
+      // Wire interactive bindings
+      initTabNavigation();
+      initAccordions();
+      initBudgetSlider(budgetVal);
 
       // Wire up suggestion chips (no-match scenario)
       document.querySelectorAll(".suggestion-chip").forEach((btn) => {
         btn.addEventListener("click", () => {
           document.getElementById("query").value = btn.getAttribute("data-suggestion");
+          parseQueryParameters();
           runQuery();
         });
       });
     }
 
+    // SCREEN NAVIGATION ROUTER
+    function updateStepTracker(screenId) {
+      const stepIds = ["welcome", "query", "pipeline", "results"];
+      const currentIdx = stepIds.indexOf(screenId);
+      
+      stepIds.forEach((id, idx) => {
+        const stepEl = document.getElementById(`track-${id}`);
+        const lineEl = document.getElementById(`line-${id}`);
+        
+        stepEl.classList.remove("active", "completed");
+        if (lineEl) lineEl.classList.remove("completed");
+        
+        if (idx === currentIdx) {
+          stepEl.classList.add("active");
+        } else if (idx < currentIdx) {
+          stepEl.classList.add("completed");
+          if (lineEl) lineEl.classList.add("completed");
+        }
+      });
+    }
+
+    function navigateToScreen(screenId) {
+      const screens = document.querySelectorAll(".screen");
+      screens.forEach(s => s.classList.remove("active"));
+      
+      const targetScreen = document.getElementById(`screen-${screenId}`);
+      if (targetScreen) {
+        targetScreen.classList.add("active");
+        updateStepTracker(screenId);
+      }
+    }
+
+    // Add tracker click-routing to allow quick backwards jumping to previously unlocked steps
+    document.querySelectorAll(".tracker-step").forEach(step => {
+      step.addEventListener("click", () => {
+        const target = step.getAttribute("data-target");
+        if (target === "welcome" || target === "query") {
+          navigateToScreen(target);
+        } else if (target === "results" && requestId.textContent !== "No query yet") {
+          navigateToScreen("results");
+        }
+      });
+      step.style.cursor = "pointer";
+    });
+
     async function runQuery() {
       runButton.textContent = "Running pipeline...";
       document.body.classList.add("loading");
-      results.innerHTML = `<div class="empty"><div><h3>Running pipeline...</h3><p>Mapping clinical intent, calculating cost ranges, ranking providers.</p></div></div>`;
+      navigateToScreen("pipeline");
+      
       try {
         const animation = animatePipeline();
         const res = await fetch("/api/query", {
@@ -934,11 +2532,14 @@
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.detail || data.error || "Request failed");
+        
         await animation;
         render(data);
+        navigateToScreen("results");
       } catch (error) {
         results.innerHTML = `<div class="error"><strong>Could not run query.</strong><br>${escapeHtml(error.message)}<br><br>Make sure you opened the product through the Python server, not directly as a file.</div>`;
         setPipeline("idle");
+        navigateToScreen("results");
       } finally {
         runButton.textContent = "Run cost intelligence";
         document.body.classList.remove("loading");
@@ -960,19 +2561,27 @@
       setPipeline("idle");
       requestId.textContent = "No query yet";
       results.innerHTML = `<div class="empty"><div><h3>Run a query to generate recommendations.</h3><p>The output will include clinical mapping, 5-component costs, ranked providers, confidence, and a disclaimer.</p></div></div>`;
+      parseQueryParameters();
     });
 
     document.querySelectorAll("[data-example]").forEach((button) => {
       button.addEventListener("click", () => {
         const example = button.getAttribute("data-example");
         document.getElementById("query").value = example;
-        const cityMatch = example.match(/Mumbai|Pune|Nagpur|Delhi|Bengaluru/i);
-        if (cityMatch) document.getElementById("city").value = cityMatch[0];
-        if (/68|father/i.test(example)) document.getElementById("age").value = "68";
-        if (/private/i.test(example)) document.getElementById("room_type").value = "private";
-        if (/diabetic|diabetes/i.test(example)) document.getElementById("comorbidities").value = "diabetes";
+        
+        // Reset advanced options first
+        document.getElementById("city").value = "";
+        document.getElementById("age").value = "";
+        document.getElementById("room_type").value = "general";
+        document.getElementById("budget").value = "";
+        document.getElementById("comorbidities").value = "";
+
+        parseQueryParameters();
       });
     });
+
+    // Run initial parser to draw chips for default query
+    parseQueryParameters();
 
     checkApi();
   </script>
