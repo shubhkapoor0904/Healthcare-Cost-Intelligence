@@ -571,12 +571,8 @@ def discover_hospitals(mapped: dict[str, Any], city: str, cost: dict[str, Any], 
     if not hospitals_list:
         return []
         
-    max_distance = max(h["distance_km"] for h in hospitals_list) or 15.0
-    
     ranked = []
     for h in hospitals_list:
-        accessibility = max(0.05, min(1.0, 1 - (h["distance_km"] / (max_distance + 4))))
-        
         req_spec = mapped["specialty"].lower()
         h_specs_lower = [s.lower() for s in h["specialties"]]
         if req_spec in h_specs_lower:
@@ -585,11 +581,10 @@ def discover_hospitals(mapped: dict[str, Any], city: str, cost: dict[str, Any], 
             clinical_fit_score = h["clinical_fit"]
             
         score = (
-            0.35 * clinical_fit_score
+            0.40 * clinical_fit_score
             + 0.20 * h["rating_score"]
             + 0.15 * h["accreditation"]
-            + 0.20 * h["affordability"]
-            + 0.10 * accessibility
+            + 0.25 * h["affordability"]
         )
         
         strengths, tradeoff = ranking_explanation_factors(
@@ -597,10 +592,14 @@ def discover_hospitals(mapped: dict[str, Any], city: str, cost: dict[str, Any], 
             clinical=clinical_fit_score,
             rating_score=h["rating_score"],
             accreditation=h["accreditation"],
-            affordability=h["affordability"],
-            accessibility=accessibility
+            affordability=h["affordability"]
         )
         
+        min_cost = cost["total_min_inr"] * h["price_index"]
+        max_cost = cost["total_max_inr"] * h["price_index"]
+        estimated_cost_inr = money((min_cost + max_cost) / 2)
+        uncertainty_inr = money((max_cost - min_cost) / 2)
+
         ranked.append({
             "name": h["name"],
             "city": h["city"],
@@ -613,8 +612,8 @@ def discover_hospitals(mapped: dict[str, Any], city: str, cost: dict[str, Any], 
             "cost_category": h["cost_category"],
             "approximate_location": None,
             "specialties": h["specialties"],
-            "estimated_min_inr": money(cost["total_min_inr"] * h["price_index"]),
-            "estimated_max_inr": money(cost["total_max_inr"] * h["price_index"]),
+            "estimated_cost_inr": estimated_cost_inr,
+            "uncertainty_inr": uncertainty_inr,
             "key_strengths": strengths,
             "tradeoff": tradeoff,
             "subscores": {
@@ -622,7 +621,6 @@ def discover_hospitals(mapped: dict[str, Any], city: str, cost: dict[str, Any], 
                 "rating": round(h["rating_score"], 2),
                 "accreditation": round(h["accreditation"], 2),
                 "affordability": round(h["affordability"], 2),
-                "distance": round(accessibility, 2),
             },
             "score": round(score, 3),
             "reason": make_reason(h, mapped, strengths, tradeoff),
@@ -649,14 +647,12 @@ def ranking_explanation_factors(
     rating_score: float,
     accreditation: float,
     affordability: float,
-    accessibility: float,
 ) -> tuple[list[str], str]:
     factor_scores = [
         ("strong clinical specialty match", clinical),
         (f"{hospital['rating']} star synthetic rating", rating_score),
         ("NABH accredited" if hospital["nabh_accredited"] else "known accreditation gap", accreditation),
         (f"{hospital['cost_category']} cost category", affordability),
-        (f"{hospital['distance_km']} km approximate distance", accessibility),
     ]
     strengths = [label for label, _ in sorted(factor_scores, key=lambda item: item[1], reverse=True)[:2]]
     weakest_label, weakest_score = sorted(factor_scores, key=lambda item: item[1])[0]
