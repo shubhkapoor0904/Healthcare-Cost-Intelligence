@@ -1,44 +1,83 @@
 # Healthcare Cost Intelligence
 
-Estimate treatment costs and find ranked hospitals — no internet, no paid APIs, no cloud dependency.
+Estimate treatment costs and find ranked hospitals — no internet, no paid APIs, runs entirely on your machine.
 
-Type a symptom or procedure, pick your city, and get a breakdown of expected costs across five billing components, plus a ranked shortlist of hospitals that match your specialty and budget.
-
-![Desktop view](docs/product-desktop.png)
+Type a symptom or procedure, pick your city, and get a breakdown of expected costs across five billing components, plus a ranked shortlist of hospitals scored on clinical fit, ratings, NABH accreditation, and affordability.
 
 ## Quick Start
-
-Clone the repo, then run:
 
 ```powershell
 .\run_product.ps1
 ```
 
-Open `http://127.0.0.1:8765` in your browser.
+Open `http://127.0.0.1:8765`. No API keys, no pip install, no setup beyond Python.
 
-That's it. No API keys, no pip install, no setup beyond having Python available.
+---
+
+## UI Overview
+
+### Query Form
+
+![Query form](docs/product-dataset-desktop.png)
+
+The left panel shows the 6-step processing pipeline in real time. The right panel has the query form:
+
+- **Symptom or procedure** — dropdown grouped by specialty (50 procedures across 20+ specialties)
+- **Example chips** — Cardiac (Mumbai), Maternity (Pune), Cataract (Nagpur), Kidney stone (Delhi)
+- **City** — metro through tier-2 Indian cities
+- **Age, Room preference, Budget INR**
+- **Comorbidities** — multi-select: Diabetes, Hypertension, Cardiac History, Kidney Disease, Stroke
+
+### Results — 3 tabs
+
+![Results view](docs/product-desktop.png)
+
+**Overview & Costs**
+- Total cost range as the hero figure
+- ICD-10 code and city tier context
+- 5-component cost breakdown with proportional bar chart:
+  - Procedure / surgery
+  - Doctor fees
+  - Room / stay
+  - Diagnostics
+  - Medicines + contingency
+
+**Providers**
+- Budget filter slider — highlights hospitals within range in real time
+- Hospital cards ranked by weighted score, each showing:
+  - City, star rating, review count, NABH status
+  - Estimated cost ± uncertainty
+  - Top 2 strengths and main tradeoff
+  - Expandable subscore grid (Clinical Fit · Reviews · Accreditation · Affordability)
+
+**Clinical & Confidence**
+- Mapped condition, ICD-10, specialty, severity, ambiguity score
+- Active comorbidity tags and city/room context
+- Confidence matrix with score, level (High/Medium/Low), and per-factor breakdown
+
+Collapsible legal disclaimer at the bottom of all result views.
+
+---
+
+## Mobile
+
+![Mobile view](docs/product-mobile.png)
+
+Single-column layout — query form, pipeline, and results stack vertically. All tabs and accordions work the same.
+
+---
 
 ## How It Works
 
-The whole pipeline runs locally:
-
-1. **Query parsing** — extracts city, age, and comorbidities from free text
-2. **Clinical mapping** — matches your input to one of 50 procedures using token overlap + pre-computed cosine similarity
+1. **Query parsing** — extracts city, age, and comorbidities from the form
+2. **Clinical mapping** — matches input to a procedure using token overlap + pre-computed cosine similarity (50 procedures)
 3. **Cost estimation** — pulls benchmark ranges from SQLite, then applies multipliers for city tier, age, room type, and comorbidities
-4. **Hospital ranking** — scores hospitals across clinical fit, rating, NABH accreditation, and affordability
-5. **Confidence scoring** — tells you how much to trust the estimate based on data completeness and query ambiguity
+4. **Hospital ranking** — scores hospitals on clinical fit (40%), affordability (25%), rating (20%), and NABH accreditation (15%)
+5. **Confidence scoring** — rates estimate quality based on data completeness and query ambiguity
 
 No ML libraries are needed at runtime. Embeddings were pre-computed with `sentence-transformers/all-MiniLM-L6-v2` and stored as JSON. Cosine similarity runs in pure Python.
 
-## What's Included
-
-- 50 procedures across 20+ specialties (orthopedics, cardiology, oncology, obstetrics, etc.)
-- 43 hospitals across metro, tier-1, and tier-2 Indian cities
-- City-tier cost multipliers (metro through tier-3)
-- Comorbidity adjustments for diabetes, hypertension, and kidney disease
-- Room-type adjustments (general, private, ICU)
-- NABH accreditation flags and synthetic ratings
-- Confidence score with plain-English explanation
+---
 
 ## Dataset
 
@@ -55,17 +94,19 @@ To regenerate the database from scratch:
 python seed_db.py
 ```
 
+---
+
 ## API Endpoints
 
 | Method | Path | Description |
 |--------|------|-------------|
 | `GET` | `/health` | Server health check |
-| `GET` | `/api/billing-guard` | Confirms no external API calls are made |
-| `GET` | `/api/procedures` | Lists all 50 supported procedures |
-| `GET` | `/api/hospitals?city=Nagpur&procedure=knee pain` | Hospitals filtered by city and procedure |
-| `POST` | `/api/query` | Main query endpoint — returns cost breakdown and ranked hospitals |
+| `GET` | `/api/billing-guard` | Confirms no external API calls |
+| `GET` | `/api/procedures` | All 50 supported procedures |
+| `GET` | `/api/hospitals?city=Nagpur&procedure=knee pain` | Hospitals by city and procedure |
+| `POST` | `/api/query` | Main endpoint — cost breakdown + ranked hospitals |
 
-Example query:
+Example request body:
 
 ```json
 {
@@ -78,15 +119,7 @@ Example query:
 }
 ```
 
-## Architecture
-
-![Architecture diagram](docs/architecture-desktop.png)
-
-## Screenshots
-
-| Query form | Results with hospital dataset |
-|---|---|
-| ![Product](docs/product-desktop.png) | ![Dataset view](docs/product-dataset-desktop.png) |
+---
 
 ## Notes
 
