@@ -1754,9 +1754,105 @@
       .tracker-step .step-name {
         display: none;
       }
-      .tracker-line {
-        margin: 0 8px;
-      }
+    /* CUSTOM MULTI-SELECT DROPDOWN SYSTEM */
+    .custom-dropdown {
+      position: relative;
+      width: 100%;
+    }
+    
+    .dropdown-trigger {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+      background: rgba(9, 11, 12, 0.6);
+      color: var(--text);
+      padding: 11px 13px;
+      outline: none;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      text-align: left;
+      backdrop-filter: blur(5px);
+    }
+    
+    .dropdown-trigger:focus {
+      border-color: var(--green);
+      box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15), inset 0 2px 4px rgba(0, 0, 0, 0.3);
+      background: rgba(9, 11, 12, 0.85);
+    }
+    
+    .dropdown-trigger .chevron {
+      font-size: 11px;
+      color: var(--muted);
+      transition: transform 0.25s ease;
+    }
+    
+    .dropdown-trigger.active .chevron {
+      transform: rotate(180deg);
+      color: #fff;
+    }
+    
+    .dropdown-menu {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      margin-top: 6px;
+      background: rgba(18, 22, 25, 0.95);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 0 20px rgba(16, 185, 129, 0.02);
+      z-index: 100;
+      display: none;
+      max-height: 240px;
+      overflow-y: auto;
+      padding: 6px;
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+    }
+    
+    .dropdown-menu.show {
+      display: block;
+      animation: dropdownFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+    
+    @keyframes dropdownFadeIn {
+      from { opacity: 0; transform: translateY(-4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .dropdown-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 14px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      user-select: none;
+      color: var(--muted);
+      font-size: 13.5px;
+      font-weight: 500;
+    }
+    
+    .dropdown-item:hover {
+      background: rgba(255, 255, 255, 0.04);
+      color: #fff;
+    }
+    
+    .dropdown-item input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+      accent-color: var(--green);
+      cursor: pointer;
+      margin: 0;
+    }
+    
+    .dropdown-item input[type="checkbox"]:checked + span {
+      color: var(--green);
+      font-weight: 650;
     }
   </style>
 </head>
@@ -1824,63 +1920,107 @@
           </div>
           <p>Try realistic inputs. This MVP is offline-first: static hospital data, synthetic ratings, rule-based mapping, and deterministic local scoring.</p>
           <form id="queryForm">
-            <div class="field full">
-              <label for="query">Symptom or procedure</label>
-              <textarea id="query" name="query" placeholder="Type a symptom or procedure, city, age, and details (e.g., knee pain, Nagpur, 45yo, diabetic)..." required>knee pain, Nagpur, 45yo, diabetic</textarea>
-            </div>
-            
-            <div class="quick-row" aria-label="Example queries">
-              <button class="chip" type="button" data-example="chest pain while walking, diabetic, Mumbai">Cardiac</button>
-              <button class="chip" type="button" data-example="pregnancy delivery package, Pune">Maternity</button>
-              <button class="chip" type="button" data-example="cataract surgery for my father age 68, Nagpur">Cataract</button>
-              <button class="chip" type="button" data-example="kidney stone pain, Delhi, private room">Kidney stone</button>
-            </div>
-
-            <!-- Auto-detected parameters feedback -->
-            <div class="detected-parameters" id="detectedParams">
-              <span class="detected-title">Extracted Context:</span>
-              <div id="detectedChips" style="display:flex; flex-wrap:wrap; gap:6px;"></div>
-            </div>
-
-            <!-- Collapsible manual override button -->
-            <button type="button" class="btn-toggle-advanced" id="toggleAdvanced">
-              <span>Modify Extracted Parameters</span>
-              <span class="arrow">▼</span>
-            </button>
-
-            <!-- Collapsible manual options -->
-            <div class="advanced-settings-wrapper" id="advancedSettings">
-              <div class="form-grid" style="padding: 4px 0 12px;">
-                <div class="field">
-                  <label for="city">City</label>
-                  <input id="city" name="city" value="Nagpur" autocomplete="address-level2">
-                </div>
-                <div class="field">
-                  <label for="age">Age</label>
-                  <input id="age" name="age" type="number" min="0" max="120" value="45">
-                </div>
-                <div class="field">
-                  <label for="room_type">Room preference</label>
-                  <select id="room_type" name="room_type">
-                    <option value="general">General</option>
-                    <option value="private">Private</option>
-                    <option value="icu">ICU likely</option>
-                  </select>
-                </div>
-                <div class="field">
-                  <label for="budget">Budget INR</label>
-                  <input id="budget" name="budget" inputmode="numeric" value="300000">
-                </div>
-                <div class="field full">
-                  <label for="comorbidities">Comorbidities</label>
-                  <input id="comorbidities" name="comorbidities" value="diabetes" placeholder="diabetes, hypertension">
+            <div class="form-grid" style="padding-bottom: 12px;">
+              <div class="field full">
+                <label for="query">Symptom or procedure</label>
+                <select id="query" name="query" required>
+                  <option value="" disabled selected>Loading procedures...</option>
+                </select>
+              </div>
+              
+              <div class="field">
+                <label for="city">City</label>
+                <select id="city" name="city" required>
+                  <option value="Nagpur" selected>Nagpur</option>
+                  <option value="Mumbai">Mumbai</option>
+                  <option value="Pune">Pune</option>
+                  <option value="Delhi">Delhi</option>
+                  <option value="Bengaluru">Bengaluru</option>
+                  <option value="Chennai">Chennai</option>
+                  <option value="Hyderabad">Hyderabad</option>
+                  <option value="Kolkata">Kolkata</option>
+                  <option value="Jaipur">Jaipur</option>
+                  <option value="Lucknow">Lucknow</option>
+                  <option value="Indore">Indore</option>
+                  <option value="Surat">Surat</option>
+                  <option value="Bhopal">Bhopal</option>
+                  <option value="Kochi">Kochi</option>
+                  <option value="Mysuru">Mysuru</option>
+                </select>
+              </div>
+              
+              <div class="field">
+                <label for="age">Age</label>
+                <input id="age" name="age" type="number" min="0" max="120" value="45" required>
+              </div>
+              
+              <div class="field">
+                <label for="room_type">Room preference</label>
+                <select id="room_type" name="room_type" required>
+                  <option value="general" selected>General</option>
+                  <option value="private">Private</option>
+                  <option value="icu">ICU likely</option>
+                </select>
+              </div>
+              
+              <div class="field">
+                <label for="budget">Budget INR</label>
+                <select id="budget" name="budget" required>
+                  <option value="50000">₹50,000 (Low tier/minor)</option>
+                  <option value="100000">₹1,00,000 (Moderate tier)</option>
+                  <option value="200000">₹2,00,000 (Mid tier procedure)</option>
+                  <option value="300000" selected>₹3,00,000 (Standard package)</option>
+                  <option value="500000">₹5,00,000 (Major / premium)</option>
+                  <option value="800000">₹8,00,000 (Advanced complex)</option>
+                  <option value="1000000">₹10,00,000 (High-end specialized)</option>
+                  <option value="1500000">₹15,00,000 (Max threshold)</option>
+                </select>
+              </div>
+              
+              <div class="field full">
+                <label for="comorbiditiesTrigger">Comorbidities / Present Diseases</label>
+                <div class="custom-dropdown" id="comorbiditiesDropdown">
+                  <button type="button" class="dropdown-trigger" id="comorbiditiesTrigger">
+                    <span class="trigger-text">Select present diseases...</span>
+                    <span class="chevron">▾</span>
+                  </button>
+                  <div class="dropdown-menu">
+                    <label class="dropdown-item">
+                      <input type="checkbox" name="comorbidity" value="diabetes">
+                      <span>Diabetes</span>
+                    </label>
+                    <label class="dropdown-item">
+                      <input type="checkbox" name="comorbidity" value="hypertension">
+                      <span>Hypertension (BP)</span>
+                    </label>
+                    <label class="dropdown-item">
+                      <input type="checkbox" name="comorbidity" value="cardiac_history">
+                      <span>Cardiac History</span>
+                    </label>
+                    <label class="dropdown-item">
+                      <input type="checkbox" name="comorbidity" value="kidney_disease">
+                      <span>Kidney Disease</span>
+                    </label>
+                    <label class="dropdown-item">
+                      <input type="checkbox" name="comorbidity" value="stroke">
+                      <span>Stroke Care</span>
+                    </label>
+                  </div>
                 </div>
               </div>
             </div>
+            
+            <div class="quick-row" aria-label="Example queries" style="margin-top: 14px;">
+              <span style="color:var(--muted); font-size:12px; font-weight:600; display:flex; align-items:center; margin-right:4px;">Try Examples:</span>
+              <button class="chip" type="button" data-example="cardiac">Cardiac (Mumbai)</button>
+              <button class="chip" type="button" data-example="maternity">Maternity (Pune)</button>
+              <button class="chip" type="button" data-example="cataract">Cataract (Nagpur)</button>
+              <button class="chip" type="button" data-example="kidney_stone">Kidney stone (Delhi)</button>
+            </div>
 
-            <div class="button-row">
+            <div class="button-row" style="margin-top: 20px;">
               <button class="primary" id="runButton" type="submit">Run cost intelligence</button>
-              <button class="secondary" id="resetButton" type="button">Reset</button>
+              <button class="secondary" id="resetButton" type="button">Reset Fields</button>
             </div>
           </form>
         </section>
@@ -1978,17 +2118,14 @@
     }
 
     function payloadFromForm() {
-      const data = new FormData(form);
-      const comorbidities = String(data.get("comorbidities") || "")
-        .split(",")
-        .map((item) => item.trim())
-        .filter(Boolean);
+      const comorbidities = Array.from(document.querySelectorAll("input[name='comorbidity']:checked"))
+        .map((cb) => cb.value);
       return {
-        query: data.get("query"),
-        city: data.get("city"),
-        age: Number(data.get("age") || 40),
-        room_type: data.get("room_type"),
-        budget: data.get("budget"),
+        query: document.getElementById("query").value,
+        city: document.getElementById("city").value,
+        age: Number(document.getElementById("age").value || 40),
+        room_type: document.getElementById("room_type").value,
+        budget: document.getElementById("budget").value,
         comorbidities
       };
     }
@@ -2012,123 +2149,78 @@
 
     const citiesList = ["Mumbai", "Delhi", "Bengaluru", "Bangalore", "Chennai", "Hyderabad", "Kolkata", "Pune", "Nagpur", "Jaipur", "Lucknow", "Indore", "Surat", "Bhopal", "Kochi", "Mysuru"];
 
-    // COLLAPSIBLE ADVANCED SETTINGS
-    const toggleAdvanced = document.getElementById("toggleAdvanced");
-    const advancedSettings = document.getElementById("advancedSettings");
-    
-    toggleAdvanced.addEventListener("click", () => {
-      toggleAdvanced.classList.toggle("active");
-      advancedSettings.classList.toggle("expanded");
-      if (advancedSettings.classList.contains("expanded")) {
-        toggleAdvanced.querySelector("span:first-child").textContent = "Hide Manual Parameters";
-      } else {
-        toggleAdvanced.querySelector("span:first-child").textContent = "Modify Extracted Parameters";
+    // DYNAMIC PROCEDURES SELECT POPULATOR
+    async function loadProcedures() {
+      try {
+        const res = await fetch("/api/procedures");
+        if (!res.ok) throw new Error("Failed to load procedures");
+        const procedures = await res.json();
+        
+        procedures.sort((a, b) => {
+          const specCompare = a.specialty.localeCompare(b.specialty);
+          if (specCompare !== 0) return specCompare;
+          return a.name.localeCompare(b.name);
+        });
+        
+        const select = document.getElementById("query");
+        select.innerHTML = '<option value="" disabled>Choose a procedure or disease...</option>';
+        
+        let currentSpecialty = "";
+        let optGroup = null;
+        
+        procedures.forEach(proc => {
+          if (proc.specialty !== currentSpecialty) {
+            currentSpecialty = proc.specialty;
+            optGroup = document.createElement("optgroup");
+            optGroup.label = currentSpecialty;
+            select.appendChild(optGroup);
+          }
+          const option = document.createElement("option");
+          option.value = proc.name;
+          option.textContent = proc.name + (proc.condition ? ` (${proc.condition})` : "");
+          if (proc.name === "Knee replacement") {
+            option.selected = true;
+          }
+          optGroup.appendChild(option);
+        });
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    // CUSTOM COMORBIDITIES MULTI-SELECT DROPDOWN SYSTEM
+    const comorbiditiesDropdown = document.getElementById("comorbiditiesDropdown");
+    const comorbiditiesTrigger = document.getElementById("comorbiditiesTrigger");
+    const triggerText = comorbiditiesTrigger.querySelector(".trigger-text");
+
+    comorbiditiesTrigger.addEventListener("click", (e) => {
+      e.stopPropagation();
+      comorbiditiesTrigger.classList.toggle("active");
+      comorbiditiesDropdown.querySelector(".dropdown-menu").classList.toggle("show");
+    });
+
+    document.addEventListener("click", (e) => {
+      if (!comorbiditiesDropdown.contains(e.target)) {
+        comorbiditiesTrigger.classList.remove("active");
+        comorbiditiesDropdown.querySelector(".dropdown-menu").classList.remove("show");
       }
     });
 
-    // AUTO-DETECTION NATURAL LANGUAGE PARSER
-    function parseQueryParameters() {
-      const q = document.getElementById("query").value.toLowerCase();
-      let detected = {};
-
-      // 1. Detect City
-      for (const city of citiesList) {
-        if (q.includes(city.toLowerCase())) {
-          detected.city = city;
-          document.getElementById("city").value = city;
-          break;
-        }
-      }
-
-      // 2. Detect Age
-      const ageMatch = q.match(/\b(\d+)\s*(?:yo|y\/o|years?|yrs?|yr|age)\b/) || q.match(/\bage\s*(\d+)\b/);
-      if (ageMatch) {
-        detected.age = ageMatch[1];
-        document.getElementById("age").value = ageMatch[1];
-      }
-
-      // 3. Detect Budget
-      const budgetMatch = q.match(/\b(?:budget|inr|rs\.?|rupees?|price|cost)?\s*(?:of\s*)?(\d+(?:\.\d+)?)\s*(k|lakhs?|lacs?|l|cr|crores?|thousand)?\b/);
-      if (budgetMatch) {
-        let val = parseFloat(budgetMatch[1]);
-        const suffix = budgetMatch[2];
-        const hasContext = /budget|inr|rs|rupees|price|cost/.test(budgetMatch[0]);
-        if (suffix || hasContext) {
-          if (suffix === "k" || suffix === "thousand") val *= 1000;
-          else if (/lakh|lac/.test(suffix)) val *= 100000;
-          else if (/cr|crore/.test(suffix)) val *= 10000000;
-          detected.budget = Math.round(val);
-          document.getElementById("budget").value = detected.budget;
-        }
-      }
-
-      // 4. Detect Room type
-      if (q.includes("private")) {
-        detected.room_type = "private";
-        document.getElementById("room_type").value = "private";
-      } else if (q.includes("icu")) {
-        detected.room_type = "icu";
-        document.getElementById("room_type").value = "icu";
-      } else if (q.includes("general")) {
-        detected.room_type = "general";
-        document.getElementById("room_type").value = "general";
-      }
-
-      // 5. Detect comorbidities
-      let comorbidities = [];
-      if (/diabet|sugar/.test(q)) comorbidities.push("diabetes");
-      if (/hypertension|bp|pressure/.test(q)) comorbidities.push("hypertension");
-      if (/kidney|renal|dialysis|creatinine/.test(q)) comorbidities.push("kidney_disease");
-      if (/heart|cardiac|stent|bypass|angio/.test(q)) comorbidities.push("cardiac_history");
-      if (/stroke|paralysis/.test(q)) comorbidities.push("stroke");
-      if (comorbidities.length > 0) {
-        detected.comorbidities = comorbidities;
-        document.getElementById("comorbidities").value = comorbidities.join(", ");
-      }
-
-      renderDetectedChips(detected);
-    }
-
-    function renderDetectedChips(detected) {
-      const container = document.getElementById("detectedChips");
-      const block = document.getElementById("detectedParams");
-      container.innerHTML = "";
-
-      let hasChips = false;
-
-      if (detected.city) {
-        container.innerHTML += `<span class="detected-chip">📍 City: ${detected.city}</span>`;
-        hasChips = true;
-      }
-      if (detected.age) {
-        container.innerHTML += `<span class="detected-chip">👤 Age: ${detected.age}</span>`;
-        hasChips = true;
-      }
-      if (detected.room_type) {
-        container.innerHTML += `<span class="detected-chip">🏥 Room: ${detected.room_type}</span>`;
-        hasChips = true;
-      }
-      if (detected.budget) {
-        const valLakh = detected.budget >= 100000 ? `${(detected.budget / 100000).toFixed(1)}L` : `${detected.budget / 1000}k`;
-        container.innerHTML += `<span class="detected-chip">💰 Budget: ₹${valLakh}</span>`;
-        hasChips = true;
-      }
-      if (detected.comorbidities && detected.comorbidities.length > 0) {
-        detected.comorbidities.forEach(c => {
-          container.innerHTML += `<span class="detected-chip">✚ ${c.replace("_", " ")}</span>`;
-        });
-        hasChips = true;
-      }
-
-      if (hasChips) {
-        block.classList.remove("hidden");
+    function updateComorbiditiesText() {
+      const checked = Array.from(document.querySelectorAll("input[name='comorbidity']:checked"));
+      if (checked.length === 0) {
+        triggerText.textContent = "Select present diseases...";
+        triggerText.style.color = "var(--muted)";
       } else {
-        block.classList.add("hidden");
+        const names = checked.map(cb => cb.parentNode.querySelector("span").textContent);
+        triggerText.textContent = names.join(", ");
+        triggerText.style.color = "var(--text)";
       }
     }
 
-    // Bind real-time input extraction
-    document.getElementById("query").addEventListener("input", parseQueryParameters);
+    document.querySelectorAll("input[name='comorbidity']").forEach(cb => {
+      cb.addEventListener("change", updateComorbiditiesText);
+    });
 
     // TABS SYSTEM BINDING
     function initTabNavigation() {
@@ -2466,8 +2558,14 @@
       // Wire up suggestion chips (no-match scenario)
       document.querySelectorAll(".suggestion-chip").forEach((btn) => {
         btn.addEventListener("click", () => {
-          document.getElementById("query").value = btn.getAttribute("data-suggestion");
-          parseQueryParameters();
+          const suggestion = btn.getAttribute("data-suggestion");
+          const querySelect = document.getElementById("query");
+          for (let i = 0; i < querySelect.options.length; i++) {
+            if (suggestion.toLowerCase().includes(querySelect.options[i].value.toLowerCase())) {
+              querySelect.selectedIndex = i;
+              break;
+            }
+          }
           runQuery();
         });
       });
@@ -2553,35 +2651,86 @@
 
     document.getElementById("resetButton").addEventListener("click", () => {
       form.reset();
-      document.getElementById("query").value = "knee pain, Nagpur, 45yo, diabetic";
+      document.getElementById("query").value = "Knee replacement";
       document.getElementById("city").value = "Nagpur";
       document.getElementById("age").value = "45";
       document.getElementById("budget").value = "300000";
-      document.getElementById("comorbidities").value = "diabetes";
+      document.getElementById("room_type").value = "general";
+      
+      // Reset checkboxes
+      document.querySelectorAll("input[name='comorbidity']").forEach(cb => {
+        cb.checked = (cb.value === "diabetes");
+      });
+      updateComorbiditiesText();
+      
       setPipeline("idle");
       requestId.textContent = "No query yet";
       results.innerHTML = `<div class="empty"><div><h3>Run a query to generate recommendations.</h3><p>The output will include clinical mapping, 5-component costs, ranked providers, confidence, and a disclaimer.</p></div></div>`;
-      parseQueryParameters();
     });
+
+    const EXAMPLES = {
+      cardiac: {
+        query: "Coronary angioplasty",
+        city: "Mumbai",
+        age: 60,
+        room_type: "private",
+        budget: "500000",
+        comorbidities: ["cardiac_history", "diabetes"]
+      },
+      maternity: {
+        query: "Maternity package",
+        city: "Pune",
+        age: 28,
+        room_type: "private",
+        budget: "200000",
+        comorbidities: []
+      },
+      cataract: {
+        query: "Cataract surgery",
+        city: "Nagpur",
+        age: 68,
+        room_type: "general",
+        budget: "50000",
+        comorbidities: ["diabetes"]
+      },
+      kidney_stone: {
+        query: "Kidney stone removal",
+        city: "Delhi",
+        age: 42,
+        room_type: "private",
+        budget: "200000",
+        comorbidities: ["kidney_disease"]
+      }
+    };
 
     document.querySelectorAll("[data-example]").forEach((button) => {
       button.addEventListener("click", () => {
-        const example = button.getAttribute("data-example");
-        document.getElementById("query").value = example;
+        const exampleKey = button.getAttribute("data-example");
+        const ex = EXAMPLES[exampleKey];
+        if (!ex) return;
         
-        // Reset advanced options first
-        document.getElementById("city").value = "";
-        document.getElementById("age").value = "";
-        document.getElementById("room_type").value = "general";
-        document.getElementById("budget").value = "";
-        document.getElementById("comorbidities").value = "";
-
-        parseQueryParameters();
+        document.getElementById("query").value = ex.query;
+        document.getElementById("city").value = ex.city;
+        document.getElementById("age").value = ex.age;
+        document.getElementById("room_type").value = ex.room_type;
+        document.getElementById("budget").value = ex.budget;
+        
+        document.querySelectorAll("input[name='comorbidity']").forEach(cb => {
+          cb.checked = ex.comorbidities.includes(cb.value);
+        });
+        
+        updateComorbiditiesText();
       });
     });
 
-    // Run initial parser to draw chips for default query
-    parseQueryParameters();
+    // Load initial procedures and set comorbidities text
+    loadProcedures().then(() => {
+      // Check diabetes by default
+      document.querySelectorAll("input[name='comorbidity']").forEach(cb => {
+        cb.checked = (cb.value === "diabetes");
+      });
+      updateComorbiditiesText();
+    });
 
     checkApi();
   </script>
