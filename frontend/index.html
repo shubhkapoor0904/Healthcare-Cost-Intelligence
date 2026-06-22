@@ -859,6 +859,28 @@
       .subscores {
         grid-template-columns: repeat(2, minmax(0, 1fr));
       }
+      .tabs-nav {
+        overflow-x: auto;
+        white-space: nowrap;
+        justify-content: start;
+        scrollbar-width: none;  /* Firefox */
+      }
+      .tabs-nav::-webkit-scrollbar {
+        display: none;          /* Chrome/Safari */
+      }
+      .tab-btn {
+        flex: 0 0 auto;
+        padding: 8px 14px;
+        font-size: 12px;
+      }
+      .slider-header {
+        flex-direction: column;
+        align-items: start;
+        gap: 8px;
+      }
+      .slider-value {
+        font-size: 18px;
+      }
     }
 
     /* COLLAPSIBLE SETTINGS & SEARCH-FIRST */
@@ -2056,7 +2078,7 @@
               </div>
             </div>
           </aside>
-          <div style="text-align:center; padding:16px 12px; color:var(--muted); font-size:14px; font-weight:600; background:rgba(255,255,255,0.02); border-radius:12px; border:1px solid rgba(255,255,255,0.04);">
+          <div style="text-align:center; padding:16px 12px; color:var(--muted); font-size:14px; font-weight:600; background:rgba(15,23,42,0.02); border-radius:12px; border:1px solid rgba(15,23,42,0.04);">
             <span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:var(--violet); margin-right:8px; animation: pulse 1.5s infinite ease-in-out;"></span>
             Calculating cost ranges and mapping clinical intent...
           </div>
