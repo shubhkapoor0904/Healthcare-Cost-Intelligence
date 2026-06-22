@@ -16,7 +16,7 @@ from urllib.parse import parse_qs, urlparse
 ROOT = Path(__file__).resolve().parent
 FRONTEND_FILE = ROOT / "frontend" / "index.html"
 HOSPITAL_DATA_FILE = ROOT / "data" / "hospitals.json"
-OFFLINE_ONLY = os.environ.get("PS4B_OFFLINE_ONLY", "1").strip() != "0"
+OFFLINE_ONLY = os.environ.get("OFFLINE_ONLY", os.environ.get("PS4B_OFFLINE_ONLY", "1")).strip() != "0"
 
 DB_FILE = ROOT / "data" / "healthcare_cost.db"
 PROCEDURE_EMBEDDINGS_FILE = ROOT / "data" / "procedure_embeddings.json"
@@ -75,7 +75,7 @@ def billing_guard() -> dict[str, Any]:
         "offline_only": OFFLINE_ONLY,
         "external_calls_allowed": False,
         "mode": "offline-first-deterministic",
-        "guarantee": "This hackathon MVP has no paid/network API dependency for core functionality. Hospital data, ratings, clinical mapping, cost estimates, ranking, confidence, and explanations are produced locally.",
+        "guarantee": "No paid or network API dependency. Hospital data, ratings, clinical mapping, cost estimates, ranking, confidence, and explanations are produced locally.",
     }
 
 
@@ -918,28 +918,18 @@ def run_query(payload: dict[str, Any]) -> dict[str, Any]:
     disclaimer = "Estimate based on demo benchmark and provider data. Verify live quotes, emergency needs, and doctor advice before deciding."
     
     return {
-        "request_id": f"ps4b-{int(time.time() * 1000)}",
+        "request_id": f"hci-{int(time.time() * 1000)}",
         "input": {"query": query, "city": city, "profile": profile, "budget": budget, "room_type": room_type},
         "clinical_mapping": mapped,
         "cost_estimate": cost,
         "hospitals": hospitals,
         "confidence": conf,
         "disclaimer": disclaimer,
-        "build_notes": {
-            "mvp_status": "offline-first deterministic pipeline; no paid/network API calls are required for core functionality",
-            "future_scope": "External APIs can be evaluated later as optional extensions, not MVP dependencies.",
-            "extracted_inputs": {
-                "city": extracted_city,
-                "age": extracted_age,
-                "budget": extracted_budget,
-                "comorbidities": extracted_comorbidities
-            }
-        },
     }
 
 
 class Handler(BaseHTTPRequestHandler):
-    server_version = "PS4BHTTP/1.0"
+    server_version = "HCI/1.0"
 
     def do_OPTIONS(self) -> None:
         self.send_response(204)
@@ -957,7 +947,7 @@ class Handler(BaseHTTPRequestHandler):
             self.end_headers()
             return
         if parsed.path == "/health":
-            self._json({"ok": True, "service": "ps4b-cost-intelligence"})
+            self._json({"ok": True, "service": "healthcare-cost-intelligence"})
             return
         if parsed.path == "/api/billing-guard":
             self._json(billing_guard())
@@ -1030,7 +1020,7 @@ def main() -> None:
     port = int(os.environ.get("PORT", "8765"))
     init_services()
     server = ThreadingHTTPServer(("127.0.0.1", port), Handler)
-    print(f"PS4B Healthcare Cost Intelligence running at http://127.0.0.1:{port}")
+    print(f"Healthcare Cost Intelligence running at http://127.0.0.1:{port}")
     server.serve_forever()
 
 
