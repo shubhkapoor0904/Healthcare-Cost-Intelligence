@@ -4,6 +4,5 @@ __pycache__/
 *.pyd
 *.log
 .venv/
-data/healthcare_cost.db
-data/chroma_db/
 
+.vercel

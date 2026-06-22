@@ -1,8 +1,15 @@
 {
   "functions": {
     "api/index.py": {
-      "includeFiles": "data/hospitals.json"
+      "includeFiles": [
+        "data/hospitals.json",
+        "data/healthcare_cost.db",
+        "data/chroma_db/**"
+      ]
     }
+  },
+  "env": {
+    "HF_HOME": "/tmp/huggingface_cache"
   },
   "rewrites": [
     { "source": "/health", "destination": "/api/index.py" },
