@@ -1,3 +1,6 @@
-# No ML dependencies needed at runtime.
-# All embeddings are pre-computed and stored as data/procedure_embeddings.json
-# and data/hospital_embeddings.json. Cosine similarity runs in pure Python.
+# No runtime ML dependencies — embeddings are pre-computed.
+# The server runs on Python's standard library only.
+#
+# To regenerate embeddings (optional, one-time):
+#   pip install sentence-transformers
+#   python seed_db.py

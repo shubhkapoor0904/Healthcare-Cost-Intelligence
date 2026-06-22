@@ -1,59 +1,95 @@
-# PS4B Healthcare Cost Intelligence
+# Healthcare Cost Intelligence
 
-Offline-first hackathon MVP for explainable healthcare cost estimation and hospital ranking.
+Estimate treatment costs and find ranked hospitals — no internet, no paid APIs, no cloud dependency.
 
-## Run
+Type a symptom or procedure, pick your city, and get a breakdown of expected costs across five billing components, plus a ranked shortlist of hospitals that match your specialty and budget.
+
+![Desktop view](docs/product-desktop.png)
+
+## Quick Start
+
+Clone the repo, then run:
 
 ```powershell
-cd C:\Users\shubh\Documents\Codex\2026-04-17-files-mentioned-by-the-user-ps4b-2
 .\run_product.ps1
 ```
 
-Then open:
+Open `http://127.0.0.1:8765` in your browser.
 
-```text
-http://127.0.0.1:8765
+That's it. No API keys, no pip install, no setup beyond having Python available.
+
+## How It Works
+
+The whole pipeline runs locally:
+
+1. **Query parsing** — extracts city, age, and comorbidities from free text
+2. **Clinical mapping** — matches your input to one of 50 procedures using token overlap + pre-computed cosine similarity
+3. **Cost estimation** — pulls benchmark ranges from SQLite, then applies multipliers for city tier, age, room type, and comorbidities
+4. **Hospital ranking** — scores hospitals across clinical fit, rating, NABH accreditation, and affordability
+5. **Confidence scoring** — tells you how much to trust the estimate based on data completeness and query ambiguity
+
+No ML libraries are needed at runtime. Embeddings were pre-computed with `sentence-transformers/all-MiniLM-L6-v2` and stored as JSON. Cosine similarity runs in pure Python.
+
+## What's Included
+
+- 50 procedures across 20+ specialties (orthopedics, cardiology, oncology, obstetrics, etc.)
+- 43 hospitals across metro, tier-1, and tier-2 Indian cities
+- City-tier cost multipliers (metro through tier-3)
+- Comorbidity adjustments for diabetes, hypertension, and kidney disease
+- Room-type adjustments (general, private, ICU)
+- NABH accreditation flags and synthetic ratings
+- Confidence score with plain-English explanation
+
+## Dataset
+
+| File | Contents |
+|------|----------|
+| `data/healthcare_cost.db` | Procedures, cost benchmarks, city tiers, multipliers |
+| `data/hospitals.json` | 43 hospital records with specialties and ratings |
+| `data/procedure_embeddings.json` | Pre-computed procedure embeddings |
+| `data/hospital_embeddings.json` | Pre-computed hospital embeddings |
+
+To regenerate the database from scratch:
+
+```powershell
+python seed_db.py
 ```
 
-## Offline-First MVP
+## API Endpoints
 
-The MVP must work without paid or network APIs.
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/health` | Server health check |
+| `GET` | `/api/billing-guard` | Confirms no external API calls are made |
+| `GET` | `/api/procedures` | Lists all 50 supported procedures |
+| `GET` | `/api/hospitals?city=Nagpur&procedure=knee pain` | Hospitals filtered by city and procedure |
+| `POST` | `/api/query` | Main query endpoint — returns cost breakdown and ranked hospitals |
 
-- SQLite: cost benchmark tables and deterministic seeded procedure costs.
-- ChromaDB: local retrieval over hospital specialization descriptions.
-- sentence-transformers: local semantic embeddings for query/procedure and hospital matching.
-- Static datasets: hospitals, NABH flags, synthetic ratings/review summaries, city tiers.
-- Rule-based logic: deterministic clinical intent mapping, cost multipliers, ranking, explanations, confidence, and disclaimers.
+Example query:
 
-The current runnable app uses local seeded data and deterministic logic. The productionized offline version should move the in-memory seed data into SQLite/ChromaDB as described in `OFFLINE_MVP_SPEC.md`.
+```json
+{
+  "query": "knee pain, diabetic, 55 years old",
+  "city": "Nagpur",
+  "age": 55,
+  "budget_inr": 300000,
+  "room_type": "general",
+  "comorbidities": ["diabetes"]
+}
+```
 
-## What Works
+## Architecture
 
-- Patient query form for symptom/procedure, city, age, room preference, budget, and comorbidities.
-- Rule-based clinical mapper over 50 seeded procedures.
-- 5-component treatment cost ranges.
-- City tier, age, comorbidity, room, and ICU multipliers.
-- Static hospital retrieval and ranking.
-- Static hospital dataset with 43 synthetic but realistic hospital records in `data/hospitals.json`.
-- Weighted ranking across clinical match, reputation, accessibility, and affordability.
-- Confidence score, uncertainty handling, and no-diagnosis medical disclaimer.
-- JSON endpoints:
-  - `GET /health`
-  - `GET /api/billing-guard`
-  - `GET /api/procedures`
-  - `GET /api/hospitals?city=Nagpur&procedure=knee pain`
-  - `POST /api/query`
+![Architecture diagram](docs/architecture-desktop.png)
 
-## Billing Safety
+## Screenshots
 
-This project defaults to no paid calls.
+| Query form | Results with hospital dataset |
+|---|---|
+| ![Product](docs/product-desktop.png) | ![Dataset view](docs/product-dataset-desktop.png) |
 
-- No paid API SDK is required for core functionality.
-- No API keys are stored in this repo.
-- `.env.example` defaults to `PS4B_OFFLINE_ONLY=1`.
-- `GET /api/billing-guard` reports `external_calls_allowed: false`.
-- Any paid/network service is optional future scope only and must not be required for MVP judging.
+## Notes
 
-## Optional Future Scope
-
-Only after the offline MVP is judged, external services can be evaluated as optional enrichment. They must stay behind feature flags and hard budgets, and the local deterministic path must remain the default.
+- This does not diagnose. It maps your description to a likely care pathway for cost planning only.
+- All cost ranges are estimates from benchmark data — actual prices will vary. Always confirm with the hospital.
+- Data is static and synthetic. Do not use for emergency triage or clinical decision-making.
