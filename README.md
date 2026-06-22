@@ -14,68 +14,116 @@ Open `http://127.0.0.1:8765`. No API keys, no pip install, no setup beyond Pytho
 
 ---
 
-## UI Overview
-
-### Query Form
+## UI
 
 ![Query form](docs/product-query-desktop.png)
 
-The left panel shows the 6-step processing pipeline in real time. The right panel has the query form:
-
+**Query form inputs:**
 - **Symptom or procedure** — dropdown grouped by specialty (50 procedures across 20+ specialties)
 - **Example chips** — Cardiac (Mumbai), Maternity (Pune), Cataract (Nagpur), Kidney stone (Delhi)
 - **City** — metro through tier-2 Indian cities
 - **Age, Room preference, Budget INR**
 - **Comorbidities** — multi-select: Diabetes, Hypertension, Cardiac History, Kidney Disease, Stroke
 
-### Results — 3 tabs
-
-![Results view](docs/product-desktop.png)
-
-**Overview & Costs**
-- Total cost range as the hero figure
-- ICD-10 code and city tier context
-- 5-component cost breakdown with proportional bar chart:
-  - Procedure / surgery
-  - Doctor fees
-  - Room / stay
-  - Diagnostics
-  - Medicines + contingency
-
-**Providers**
-- Budget filter slider — highlights hospitals within range in real time
-- Hospital cards ranked by weighted score, each showing:
-  - City, star rating, review count, NABH status
-  - Estimated cost ± uncertainty
-  - Top 2 strengths and main tradeoff
-  - Expandable subscore grid (Clinical Fit · Reviews · Accreditation · Affordability)
-
-**Clinical & Confidence**
-- Mapped condition, ICD-10, specialty, severity, ambiguity score
-- Active comorbidity tags and city/room context
-- Confidence matrix with score, level (High/Medium/Low), and per-factor breakdown
-
-Collapsible legal disclaimer at the bottom of all result views.
+**Results — 3 tabs:**
+- **Overview & Costs** — total cost range hero, ICD-10 code, city tier, 5-component breakdown with proportional bar chart
+- **Providers** — hospital cards with score, estimated cost ± uncertainty, strengths/tradeoff tags, subscore grid, real-time budget filter slider
+- **Clinical & Confidence** — mapped condition, specialty, severity, ambiguity score, confidence matrix
 
 ---
 
-## Mobile
+## Architecture Diagram
 
-![Mobile view](docs/product-mobile.png)
+![Architecture](docs/architecture-desktop.png)
 
-Single-column layout — query form, pipeline, and results stack vertically. All tabs and accordions work the same.
+The pipeline runs in 6 deterministic steps:
+
+1. **Input normalizer** — extracts city, age, budget, comorbidities, room type from free text or form
+2. **Clinical mapper** — blends token overlap rules (45%) with pre-computed cosine similarity (55%) across 50 procedures
+3. **Cost estimation** — SQLite benchmark lookup → multiplier engine (city tier × age × room × comorbidity)
+4. **Hospital retrieval** — cosine similarity over pre-computed hospital embeddings, city-match priority
+5. **Ranking + confidence** — weighted score per hospital, confidence score based on data completeness and ambiguity
+6. **Response assembly** — hospital cards, cost accordion, explanations, disclaimer
+
+No ML runtime. Embeddings were pre-computed with `sentence-transformers/all-MiniLM-L6-v2` and stored as JSON. Cosine similarity runs in pure Python.
 
 ---
 
-## How It Works
+## Project Statistics
 
-1. **Query parsing** — extracts city, age, and comorbidities from the form
-2. **Clinical mapping** — matches input to a procedure using token overlap + pre-computed cosine similarity (50 procedures)
-3. **Cost estimation** — pulls benchmark ranges from SQLite, then applies multipliers for city tier, age, room type, and comorbidities
-4. **Hospital ranking** — scores hospitals on clinical fit (40%), affordability (25%), rating (20%), and NABH accreditation (15%)
-5. **Confidence scoring** — rates estimate quality based on data completeness and query ambiguity
+| Metric | Value |
+|--------|-------|
+| Procedures seeded | 50 across 20+ specialties |
+| Hospitals in dataset | 43 (metro, tier-1, tier-2 cities) |
+| Cost components per query | 5 (procedure, doctor fees, room/stay, diagnostics, medicines) |
+| City tiers covered | 4 (metro, tier-1, tier-2, tier-3) |
+| Comorbidity multipliers | 4 (diabetes, hypertension, kidney disease, age 65+) |
+| Room type multipliers | 3 (general, private, ICU) |
+| Confidence score range | 0–1 (high ≥ 0.75, medium ≥ 0.50, low < 0.50) |
+| Server cold start | < 2s (no model load at runtime) |
+| External API calls | 0 |
+| Runtime dependencies | 0 (stdlib only) |
 
-No ML libraries are needed at runtime. Embeddings were pre-computed with `sentence-transformers/all-MiniLM-L6-v2` and stored as JSON. Cosine similarity runs in pure Python.
+---
+
+## Ranking Formula
+
+Each hospital gets a composite score from four weighted sub-scores:
+
+```
+final_score =
+  0.40 × clinical_fit
++ 0.20 × rating_score
++ 0.15 × accreditation
++ 0.25 × affordability
+```
+
+**Sub-score definitions:**
+
+| Sub-score | How it's computed |
+|-----------|-------------------|
+| `clinical_fit` | `1.0` if requested specialty is in hospital's specialty list; else cosine similarity of procedure embedding vs. hospital embedding (floor 0.35) |
+| `rating_score` | `clamp((rating − 3.5) / 1.3, 0, 1)` |
+| `accreditation` | `1.0` if NABH accredited, `0.45` otherwise |
+| `affordability` | `clamp(budget / estimated_mid_cost, 0.05, 1.0)` when budget is set; defaults by cost category otherwise |
+
+**Per-hospital cost index** (breaks identical costs across same-category hospitals):
+
+```
+price_index = category_base + (rating − 4.0) / 25 + nabh_bonus
+```
+Where `category_base` ∈ {0.78 budget, 1.0 mid, 1.24 premium} and `nabh_bonus` = 0.04.
+
+---
+
+## Engineering Challenges
+
+**Identical cost estimates across hospitals**
+All hospitals in the same cost category (`budget`/`mid`/`premium`) shared the same flat price multiplier from a pre-built embeddings JSON. Fixed by recomputing `price_index` live at query time from each hospital's rating and NABH status, giving continuous per-hospital variation instead of 3 discrete buckets.
+
+**Stale embeddings cache bypass**
+The first attempt at fixing the price index landed in `load_hospitals()` which populates the `HOSPITALS` list — but `discover_hospitals()` iterates over `_hospital_embeddings_cache` loaded from a pre-built JSON file. The fix had to go inside the loop that reads from the cache, not the list loader.
+
+**No ML runtime constraint**
+`sentence-transformers` requires PyTorch (~2 GB), which breaks Vercel's 250 MB function limit and adds multi-second cold starts. Solution: pre-compute all embeddings offline and store as compact JSON. Runtime cosine similarity is a 10-line pure Python function.
+
+**Ambiguity without hard rejection**
+Queries like "headache" match both migraine and stroke. Rather than erroring, the system blends rule score and embedding score, computes an ambiguity delta between top-2 candidates, and surfaces a clarifying question only when the gap is < 0.08 or score < 0.55.
+
+**Deterministic cost ranges**
+A single midpoint estimate is misleading for healthcare. The engine computes an uncertainty band: `uncertainty_fraction = 0.06 + (0.015 × complexity_level) + (0.01 × comorbidity_count)`, then applies it symmetrically around the expected cost midpoint. This keeps ranges narrow for simple procedures and wider for complex or high-comorbidity cases.
+
+---
+
+## Future Roadmap
+
+- **Live price data** — optional enrichment via hospital APIs or CGHS rate card, behind a feature flag
+- **Insurance coverage overlay** — map procedures to common policy inclusions/exclusions
+- **Geolocation** — auto-detect city from browser, filter by actual driving distance
+- **EMR/PDF upload** — extract procedure from discharge summary or prescription
+- **Multi-procedure bundles** — estimate combined cost for procedures commonly done together (e.g., cataract + IOL implant)
+- **Provider verification link** — direct link to hospital's official quote/inquiry page
+- **Trend data** — year-over-year cost movement for common procedures in each city
 
 ---
 
@@ -88,7 +136,7 @@ No ML libraries are needed at runtime. Embeddings were pre-computed with `senten
 | `data/procedure_embeddings.json` | Pre-computed procedure embeddings |
 | `data/hospital_embeddings.json` | Pre-computed hospital embeddings |
 
-To regenerate the database from scratch:
+To regenerate the database:
 
 ```powershell
 python seed_db.py
