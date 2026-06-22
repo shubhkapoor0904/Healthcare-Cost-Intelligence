@@ -18,7 +18,7 @@ Open `http://127.0.0.1:8765`. No API keys, no pip install, no setup beyond Pytho
 
 ### Query Form
 
-![Query form](docs/product-dataset-desktop.png)
+![Query form](docs/product-query-desktop.png)
 
 The left panel shows the 6-step processing pipeline in real time. The right panel has the query form:
 
