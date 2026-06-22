@@ -1887,6 +1887,16 @@
       color: var(--green);
       font-weight: 650;
     }
+    .knowledge-panel-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+    }
+    @media (max-width: 620px) {
+      .knowledge-panel-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
   </style>
 </head>
 <body>
@@ -2442,6 +2452,35 @@
 
             <!-- TAB 2: RANKED PROVIDERS -->
             <div class="tab-panel" id="panel-hospitals" role="tabpanel">
+              ${!isNoMatch ? `
+              <!-- Procedure Knowledge Panel -->
+              <div class="card fade-in-up" id="knowledge-panel" style="background: linear-gradient(135deg, rgba(139, 92, 246, 0.04) 0%, rgba(37, 99, 235, 0.04) 100%); border: 1px solid rgba(37, 99, 235, 0.15); margin-bottom: 16px;">
+                <div class="card-header" style="margin-bottom: 14px; border-bottom: none; padding-bottom: 0;">
+                  <h3 style="display: flex; align-items: center; gap: 8px; font-family: var(--font-heading); font-size: 15px; font-weight: 700; color: var(--text);">
+                    📘 Clinical Knowledge Panel: ${escapeHtml(mapping.procedure)}
+                  </h3>
+                </div>
+                <div class="knowledge-panel-grid">
+                  <div class="subscore-item" style="text-align: left; padding: 12px; background: rgba(255, 255, 255, 0.7); border: 1px solid rgba(15, 23, 42, 0.05); border-radius: 10px;">
+                    <span style="font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; display: block; margin-bottom: 4px;">Typical Stay</span>
+                    <b style="font-size: 15px; color: var(--text); font-weight: 750;">${escapeHtml(mapping.typical_stay || "N/A")}</b>
+                  </div>
+                  <div class="subscore-item" style="text-align: left; padding: 12px; background: rgba(255, 255, 255, 0.7); border: 1px solid rgba(15, 23, 42, 0.05); border-radius: 10px;">
+                    <span style="font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; display: block; margin-bottom: 4px;">Recovery</span>
+                    <b style="font-size: 15px; color: var(--text); font-weight: 750;">${escapeHtml(mapping.recovery_time || "N/A")}</b>
+                  </div>
+                  <div class="subscore-item" style="text-align: left; padding: 12px; background: rgba(255, 255, 255, 0.7); border: 1px solid rgba(15, 23, 42, 0.05); border-radius: 10px;">
+                    <span style="font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; display: block; margin-bottom: 4px;">Specialty</span>
+                    <b style="font-size: 15px; color: var(--text); font-weight: 750;">${escapeHtml(mapping.specialty || "N/A")}</b>
+                  </div>
+                  <div class="subscore-item" style="text-align: left; padding: 12px; background: rgba(255, 255, 255, 0.7); border: 1px solid rgba(15, 23, 42, 0.05); border-radius: 10px;">
+                    <span style="font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; display: block; margin-bottom: 4px;">ICD-10 Code</span>
+                    <b style="font-size: 15px; color: var(--text); font-weight: 750;">${escapeHtml(mapping.icd10_code || "N/A")}</b>
+                  </div>
+                </div>
+              </div>
+              ` : ""}
+
               <!-- Budget Filter Slider -->
               <div class="budget-slider-card fade-in-up">
                 <div class="slider-header">

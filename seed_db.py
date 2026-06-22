@@ -28,6 +28,12 @@ def seed_sqlite():
     conn = sqlite3.connect(str(DB_FILE))
     cursor = conn.cursor()
     
+    # Drop tables to recreate with new schema
+    cursor.execute("DROP TABLE IF EXISTS procedures")
+    cursor.execute("DROP TABLE IF EXISTS procedure_benchmarks")
+    cursor.execute("DROP TABLE IF EXISTS city_tiers")
+    cursor.execute("DROP TABLE IF EXISTS multipliers")
+
     # 1. Procedures table
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS procedures (
@@ -38,7 +44,9 @@ def seed_sqlite():
             specialty TEXT,
             complexity TEXT,
             synonyms_json TEXT,
-            red_flag_terms_json TEXT
+            red_flag_terms_json TEXT,
+            typical_stay TEXT,
+            recovery_time TEXT
         )
     """)
     
@@ -104,7 +112,9 @@ def seed_sqlite():
             proc.specialty,
             proc.complexity,
             json.dumps(proc.aliases),
-            json.dumps(red_flags)
+            json.dumps(red_flags),
+            proc.typical_stay,
+            proc.recovery_time
         ))
         
         # Calculate benchmarks for each city tier and component
@@ -144,8 +154,8 @@ def seed_sqlite():
                 ))
                 
     cursor.executemany("""
-        INSERT INTO procedures (procedure_id, display_name, condition_label, icd10_code, specialty, complexity, synonyms_json, red_flag_terms_json)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO procedures (procedure_id, display_name, condition_label, icd10_code, specialty, complexity, synonyms_json, red_flag_terms_json, typical_stay, recovery_time)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, procedures_data)
     
     cursor.executemany("""
